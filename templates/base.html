@@ -34,32 +34,73 @@
       color:var(--gris900);
     }
 
-    .container{ width:min(1100px, 92vw); margin:28px auto 56px; }
+    .container{ width:min(1100px, 92vw); margin:18px auto 48px; }
 
+    /* ===== TOPBAR ===== */
     .topbar{
-      display:flex; align-items:center; justify-content:space-between;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
       gap:14px;
       background:rgba(255,255,255,.92);
       border:1px solid var(--gris200);
       backdrop-filter:blur(8px);
-      padding:14px 18px;
+      padding:14px 16px;
       border-radius:16px;
       box-shadow:var(--shadow);
     }
 
-    .brand{ display:flex; align-items:center; gap:12px; min-width: 260px; }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      /* ❌ quitamos min-width para que no reviente en móvil */
+      min-width: 0;
+    }
+
     .brand img{
       height:44px; width:44px;
       object-fit:contain;
       display:block;
-      border-radius:10px;
+      border-radius:12px;
       background:#fff;
       border:1px solid var(--gris200);
+      flex: 0 0 auto;
     }
-    .brand strong{ display:block; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
-    .brand span{ display:block; font-size:13px; color:var(--gris700); line-height:1.2; }
 
-    .nav{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .brand strong{
+      display:block;
+      font-weight:800;
+      letter-spacing:-.02em;
+      line-height:1.1;
+    }
+    .brand span{
+      display:block;
+      font-size:13px;
+      color:var(--gris700);
+      line-height:1.2;
+    }
+
+    /* Hace que el texto no “empuje” infinito */
+    .brand .text{
+      min-width: 0;
+    }
+    .brand .text strong,
+    .brand .text span{
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 520px;
+    }
+
+    .nav{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      align-items:center;
+    }
+
     .btn{
       padding:10px 14px;
       border-radius:12px;
@@ -70,6 +111,10 @@
       background:var(--blanco);
       color:var(--gris900);
       cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      line-height:1;
     }
     .btn.primary{
       background:linear-gradient(135deg, var(--vino), var(--vino2));
@@ -77,6 +122,7 @@
       border:none;
     }
 
+    /* ===== CARDS / FORMS ===== */
     .card{
       margin-top:18px;
       background:rgba(255,255,255,.96);
@@ -146,6 +192,47 @@
       font-weight:700;
       margin-top:10px;
     }
+
+    /* ===== ✅ MÓVIL ===== */
+    @media (max-width: 700px){
+      .container{ width: min(1100px, 94vw); margin:14px auto 40px; }
+
+      .topbar{
+        flex-direction: column;
+        align-items: stretch;
+        gap:12px;
+        padding:12px;
+      }
+
+      .brand{
+        gap:10px;
+      }
+
+      .brand img{
+        height:40px; width:40px;
+      }
+
+      .brand .text strong,
+      .brand .text span{
+        max-width: 100%;
+      }
+
+      .nav{
+        justify-content: stretch;
+        gap:10px;
+      }
+
+      /* Botones en 2 columnas en celular */
+      .nav .btn{
+        flex: 1 1 calc(50% - 10px);
+        padding:11px 12px;
+        font-size:14px;
+      }
+
+      h1{ font-size:24px; }
+      .card-header{ padding:16px 16px 0; }
+      .card-body{ padding:16px; }
+    }
   </style>
 </head>
 
@@ -153,9 +240,11 @@
   <div class="container">
     <div class="topbar">
       <div class="brand">
-        <!-- Si tu archivo es JPG, cambia logo.png por logo.jpg -->
+        <!-- ✅ IMPORTANTE:
+             El logo debe estar en: static/img/logo.png
+             Si tu archivo es "images.jpg" cámbialo a logo.png o cambia el filename abajo -->
         <img src="{{ url_for('static', filename='img/logo.png') }}" alt="A3">
-        <div>
+        <div class="text">
           <strong>A3 Laboratorio Veterinario</strong>
           <span>Solicitud de recogida de muestras</span>
         </div>
@@ -176,4 +265,3 @@
   </div>
 </body>
 </html>
-
