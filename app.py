@@ -1,194 +1,149 @@
 import os
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from datetime import datetime
-from functools import wraps
 
-from flask import Flask, render_template, request, redirect, url_for, session, abort
-from werkzeug.security import generate_password_hash, check_password_hash
+from flask import (
+    Flask, render_template, request,
+    redirect, url_for, session
+)
 
+# =========================
+# CONFIG
+# =========================
 app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-# ✅ Secret key para sesiones (Render = variable de entorno)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-cambia-esto")
-
-# ✅ DB en carpeta escribible (instance/)
-os.makedirs(app.instance_path, exist_ok=True)
-DB_PATH = os.path.join(app.instance_path, "laboratorio.db")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
+# =========================
+# DB CONNECTION
+# =========================
 def get_db():
-    conn = sqlite3.connect(DB_PATH, timeout=10)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return psycopg2.connect(
+        DATABASE_URL,
+        cursor_factory=RealDictCursor,
+        sslmode="require"
+    )
 
 
+# =========================
+# INIT DB (solo crea tablas si no existen)
+# =========================
 def init_db():
     conn = get_db()
     cur = conn.cursor()
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS solicitudes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            zona TEXT NOT NULL,
-            dueno_nombre TEXT NOT NULL,
-            dueno_telefono TEXT NOT NULL,
-            dueno_email TEXT,
-            mascota_nombre TEXT NOT NULL,
-            mascota_tipo TEXT NOT NULL,
-            mascota_edad INTEGER,
-            mascota_raza TEXT,
-            muestra_tipo TEXT NOT NULL,
-            direccion TEXT NOT NULL,
-            fecha TEXT,
-            horario TEXT,
-            estado TEXT DEFAULT 'pendiente',
-            creado TEXT NOT NULL
-        )
+    CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        usuario TEXT UNIQUE NOT NULL,
+        nombre TEXT NOT NULL,
+        password TEXT NOT NULL
+    );
     """)
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS veterinarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            usuario TEXT UNIQUE NOT NULL,
-            nombre TEXT NOT NULL,
-            password_hash TEXT NOT NULL,
-            rol TEXT NOT NULL DEFAULT 'vet',
-            creado TEXT NOT NULL
-        )
+    CREATE TABLE IF NOT EXISTS solicitudes (
+        id SERIAL PRIMARY KEY,
+        zona TEXT,
+        dueno TEXT,
+        tel TEXT,
+        mascota TEXT,
+        muestra TEXT,
+        direccion TEXT,
+        fecha DATE,
+        horario TEXT,
+        estado TEXT DEFAULT 'pendiente',
+        creado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
     """)
 
-    # ✅ Admin por defecto: admin / 1234 (si no existe)
-    cur.execute("SELECT COUNT(*) AS c FROM veterinarios WHERE rol='admin'")
-    if cur.fetchone()["c"] == 0:
+    # Admin por defecto
+    cur.execute("SELECT * FROM usuarios WHERE usuario='admin'")
+    if not cur.fetchone():
         cur.execute("""
-            INSERT INTO veterinarios(usuario, nombre, password_hash, rol, creado)
-            VALUES (?, ?, ?, 'admin', ?)
-        """, (
-            "admin",
-            "Administrador",
-            generate_password_hash("1234"),
-            datetime.now().isoformat(timespec="seconds")
-        ))
+            INSERT INTO usuarios (usuario, nombre, password)
+            VALUES ('admin', 'Administrador', '1234')
+        """)
 
     conn.commit()
+    cur.close()
     conn.close()
 
 
+# =========================
+# LOGIN REQUIRED
+# =========================
 def login_required(view):
-    @wraps(view)
     def wrapped(*args, **kwargs):
         if not session.get("logged_in"):
             return redirect(url_for("login"))
         return view(*args, **kwargs)
+    wrapped.__name__ = view.__name__
     return wrapped
 
 
-def admin_required(view):
-    @wraps(view)
-    def wrapped(*args, **kwargs):
-        if not session.get("logged_in"):
-            return redirect(url_for("login"))
-        if session.get("rol") != "admin":
-            abort(403)
-        return view(*args, **kwargs)
-    return wrapped
-
-
+# =========================
+# ROUTES
+# =========================
 @app.route("/")
 def home():
     return render_template("formulario.html", title="Nueva solicitud")
 
 
 @app.route("/solicitud", methods=["POST"])
-def solicitud():
-    f = request.form
-
-    dueno_nombre = (f.get("dueno_nombre") or "").strip()
-    dueno_telefono = (f.get("dueno_telefono") or "").strip()
-    dueno_email = (f.get("dueno_email") or "").strip()
-
-    mascota_nombre = (f.get("mascota_nombre") or "").strip()
-    mascota_tipo = (f.get("mascota_tipo") or "").strip()
-    mascota_edad = f.get("mascota_edad")
-    mascota_raza = (f.get("mascota_raza") or "").strip()
-
-    muestra_tipo = (f.get("muestra_tipo") or "").strip()
-    direccion = (f.get("direccion") or "").strip()
-    zona = (f.get("zona") or "").strip()
-    fecha = (f.get("fecha") or "").strip()
-    horario = (f.get("horario") or "").strip()
-
-    if not all([dueno_nombre, dueno_telefono, mascota_nombre, mascota_tipo, muestra_tipo, direccion, zona]):
-        return render_template("confirmacion.html", ok=False, mensaje="Faltan datos obligatorios.", title="Error")
-
-    try:
-        mascota_edad_int = int(mascota_edad) if mascota_edad not in (None, "") else None
-    except:
-        mascota_edad_int = None
-
+def crear_solicitud():
     conn = get_db()
     cur = conn.cursor()
+
     cur.execute("""
-        INSERT INTO solicitudes (
-            zona, dueno_nombre, dueno_telefono, dueno_email,
-            mascota_nombre, mascota_tipo, mascota_edad, mascota_raza,
-            muestra_tipo, direccion, fecha, horario, estado, creado
-        )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO solicitudes
+        (zona, dueno, tel, mascota, muestra, direccion, fecha, horario)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
     """, (
-        zona, dueno_nombre, dueno_telefono, dueno_email or None,
-        mascota_nombre, mascota_tipo, mascota_edad_int, mascota_raza or None,
-        muestra_tipo, direccion, fecha or None, horario or None,
-        "pendiente",
-        datetime.now().isoformat(timespec="seconds")
+        request.form["zona"],
+        request.form["dueno_nombre"],
+        request.form["dueno_telefono"],
+        request.form["mascota_nombre"],
+        request.form["muestra_tipo"],
+        request.form["direccion"],
+        request.form["fecha"],
+        request.form["horario"]
     ))
+
     conn.commit()
+    cur.close()
     conn.close()
 
-    return render_template("confirmacion.html", ok=True, mensaje="Solicitud recibida ✅ Guardada en SQLite.", title="Confirmación")
-
-
-@app.route("/solicitudes")
-@login_required
-def solicitudes():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM solicitudes ORDER BY id DESC LIMIT 50")
-    rows = cur.fetchall()
-    conn.close()
-    return render_template("solicitudes.html", rows=rows, title="Solicitudes")
+    return render_template("confirmacion.html", title="Solicitud enviada")
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    if session.get("logged_in"):
-        return redirect(url_for("solicitudes"))
-
     error = None
 
     if request.method == "POST":
-        usuario = (request.form.get("usuario") or "").strip()
-        password = (request.form.get("password") or "").strip()  # ✅ coincide con tu HTML
-
-        if not usuario or not password:
-            error = "Completa usuario y contraseña."
-            return render_template("login.html", error=error, title="Login")
+        usuario = request.form["usuario"]
+        password = request.form["password"]
 
         conn = get_db()
         cur = conn.cursor()
-        cur.execute("SELECT * FROM veterinarios WHERE usuario = ?", (usuario,))
-        u = cur.fetchone()
+        cur.execute(
+            "SELECT * FROM usuarios WHERE usuario=%s AND password=%s",
+            (usuario, password)
+        )
+        user = cur.fetchone()
+        cur.close()
         conn.close()
 
-        if not u or not check_password_hash(u["password_hash"], password):
-            error = "Usuario o contraseña incorrectos."
-            return render_template("login.html", error=error, title="Login")
-
-        session["logged_in"] = True
-        session["usuario"] = u["usuario"]
-        session["nombre"] = u["nombre"]
-        session["rol"] = u["rol"]
-        return redirect(url_for("solicitudes"))
+        if user:
+            session["logged_in"] = True
+            session["usuario"] = user["usuario"]
+            return redirect(url_for("ver_solicitudes"))
+        else:
+            error = "Usuario o clave incorrecta"
 
     return render_template("login.html", error=error, title="Login")
 
@@ -196,50 +151,36 @@ def login():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("home"))
+    return redirect(url_for("login"))
 
 
-@app.route("/crear-vet", methods=["GET", "POST"])
-@admin_required
-def crear_vet():
-    error = None
+@app.route("/solicitudes")
+@login_required
+def ver_solicitudes():
+    conn = get_db()
+    cur = conn.cursor()
 
-    if request.method == "POST":
-        usuario = (request.form.get("usuario") or "").strip()
-        nombre = (request.form.get("nombre") or "").strip()
-        clave = (request.form.get("clave") or "").strip()
+    cur.execute("""
+        SELECT *
+        FROM solicitudes
+        ORDER BY creado DESC
+        LIMIT 50
+    """)
+    solicitudes = cur.fetchall()
 
-        if not usuario or not nombre or not clave:
-            error = "Completa todos los campos."
-            return render_template("crear_vet.html", error=error, title="Crear veterinario")
+    cur.close()
+    conn.close()
 
-        try:
-            conn = get_db()
-            cur = conn.cursor()
-            cur.execute("""
-                INSERT INTO veterinarios(usuario, nombre, password_hash, rol, creado)
-                VALUES (?,?,?,?,?)
-            """, (
-                usuario, nombre, generate_password_hash(clave),
-                "vet",
-                datetime.now().isoformat(timespec="seconds")
-            ))
-            conn.commit()
-            conn.close()
-            return redirect(url_for("solicitudes"))
-        except sqlite3.IntegrityError:
-            error = "Ese usuario ya existe."
-
-    return render_template("crear_vet.html", error=error, title="Crear veterinario")
+    return render_template(
+        "solicitudes.html",
+        solicitudes=solicitudes,
+        title="Solicitudes"
+    )
 
 
-# ✅ init DB al arrancar
-try:
-    init_db()
-except Exception as e:
-    # Esto aparecerá en Render logs
-    print("ERROR init_db:", repr(e))
-
-
+# =========================
+# START
+# =========================
 if __name__ == "__main__":
+    init_db()
     app.run(debug=True)
