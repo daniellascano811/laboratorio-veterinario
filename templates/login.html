@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% set title = "Login" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h1>Login</h1>
+    <p class="subtitle">Acceso interno para ver solicitudes.</p>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" action="/login">
+      <div class="grid">
+        <div>
+          <label>Usuario</label>
+          <input name="usuario" required>
+        </div>
+        <div>
+          <label>Contraseña</label>
+          <input name="password" type="password" required>
+        </div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button class="btn primary" type="submit">Entrar</button>
+      </div>
+
+      {% if error %}
+        <div class="error">{{ error }}</div>
+      {% endif %}
+    </form>
+
+    <p style="margin-top:14px;color:#6b7280;font-size:13px;">
+      Demo: usuario <b>admin</b> / clave <b>1234</b>
+    </p>
+  </div>
+</div>
+{% endblock %}

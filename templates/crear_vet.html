@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:680px;margin:0 auto;">
+  <div class="card-header">
+    <h1>Crear veterinario</h1>
+    <p class="subtitle">Solo admin puede crear usuarios</p>
+  </div>
+
+  <div class="card-body">
+    {% if error %}
+      <div style="padding:12px;border-radius:12px;background:#ffe8e8;color:#8b0000;margin-bottom:12px;">
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <form method="POST">
+      <label>Usuario</label>
+      <input name="usuario" required>
+
+      <label>Nombre</label>
+      <input name="nombre" required>
+
+      <label>Clave</label>
+      <input type="password" name="clave" required>
+
+      <button class="btn primary" type="submit" style="margin-top:14px;">Crear</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

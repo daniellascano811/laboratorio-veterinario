@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% set title = "Nueva solicitud" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h1>Solicitud de recogida</h1>
+    <p class="subtitle">Completa los datos para programar la recogida.</p>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" action="/solicitud">
+      <div class="grid">
+
+        <div class="section">
+          <h3>Datos del dueño</h3>
+          <label>Nombre completo</label>
+          <input name="dueno_nombre" required>
+
+          <label>Teléfono / WhatsApp</label>
+          <input name="dueno_telefono" required>
+
+          <label>Correo</label>
+          <input type="email" name="dueno_email">
+        </div>
+
+        <div class="section">
+          <h3>Datos de la mascota</h3>
+          <label>Nombre</label>
+          <input name="mascota_nombre" required>
+
+          <label>Tipo</label>
+          <select name="mascota_tipo" required>
+            <option value="Perro">Perro</option>
+            <option value="Gato">Gato</option>
+            <option value="Otro">Otro</option>
+          </select>
+
+          <label>Edad</label>
+          <input type="number" name="mascota_edad" min="0" max="50">
+
+          <label>Raza</label>
+          <input name="mascota_raza">
+        </div>
+
+        <div class="section">
+          <h3>Recogida</h3>
+
+          <label>Tipo de muestra</label>
+          <select name="muestra_tipo" required>
+            <option value="Orina">Orina</option>
+            <option value="Heces">Heces</option>
+            <option value="Sanguínea">Sanguínea</option>
+          </select>
+
+          <label>Dirección</label>
+          <input name="direccion" required>
+
+          <label>Zona</label>
+          <select name="zona" required>
+            <option value="Norte">Norte</option>
+            <option value="Sur">Sur</option>
+            <option value="Este">Este</option>
+            <option value="Oeste">Oeste</option>
+          </select>
+        </div>
+
+        <div class="section">
+          <h3>Preferencias</h3>
+
+          <label>Fecha</label>
+          <input type="date" name="fecha">
+
+          <label>Horario (con rango)</label>
+          <select name="horario" required>
+            <option value="Mañana (8:00 - 10:00)">Mañana (8:00 - 10:00)</option>
+            <option value="Mañana (10:00 - 12:00)">Mañana (10:00 - 12:00)</option>
+            <option value="Tarde (1:00 - 3:00)">Tarde (1:00 - 3:00)</option>
+            <option value="Tarde (3:00 - 5:00)">Tarde (3:00 - 5:00)</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div style="margin-top:16px; text-align:right;">
+        <button class="btn primary" type="submit">Enviar solicitud</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

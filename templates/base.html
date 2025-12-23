@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or "A3 Laboratorio Veterinario" }}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --vino:#7b0f1a;
+      --vino2:#a01b2a;
+      --gris900:#111827;
+      --gris700:#374151;
+      --gris500:#6b7280;
+      --gris200:#e5e7eb;
+      --gris100:#f3f4f6;
+      --blanco:#ffffff;
+      --radius:18px;
+      --shadow:0 12px 30px rgba(0,0,0,.08);
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(900px 400px at 15% -10%, rgba(123,15,26,.14), transparent 60%),
+        radial-gradient(900px 400px at 85% 0%, rgba(160,27,42,.10), transparent 55%),
+        var(--gris100);
+      color:var(--gris900);
+    }
+
+    .container{ width:min(1100px, 92vw); margin:28px auto 56px; }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px;
+      background:rgba(255,255,255,.92);
+      border:1px solid var(--gris200);
+      backdrop-filter:blur(8px);
+      padding:14px 18px;
+      border-radius:16px;
+      box-shadow:var(--shadow);
+    }
+
+    .brand{ display:flex; align-items:center; gap:12px; min-width: 260px; }
+    .brand img{
+      height:44px; width:44px;
+      object-fit:contain;
+      display:block;
+      border-radius:10px;
+      background:#fff;
+      border:1px solid var(--gris200);
+    }
+    .brand strong{ display:block; font-weight:800; letter-spacing:-.02em; line-height:1.1; }
+    .brand span{ display:block; font-size:13px; color:var(--gris700); line-height:1.2; }
+
+    .nav{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    .btn{
+      padding:10px 14px;
+      border-radius:12px;
+      text-decoration:none;
+      font-weight:700;
+      font-size:14px;
+      border:1px solid var(--gris200);
+      background:var(--blanco);
+      color:var(--gris900);
+      cursor:pointer;
+    }
+    .btn.primary{
+      background:linear-gradient(135deg, var(--vino), var(--vino2));
+      color:var(--blanco);
+      border:none;
+    }
+
+    .card{
+      margin-top:18px;
+      background:rgba(255,255,255,.96);
+      border:1px solid var(--gris200);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .card-header{ padding:18px 18px 0; }
+    .card-body{ padding:18px; }
+
+    h1{ margin:8px 0 6px; font-size:28px; }
+    .subtitle{ margin:0 0 10px; color:var(--gris700); font-size:14px; }
+
+    label{
+      display:block; margin:10px 0 6px;
+      font-weight:600; font-size:13px; color:var(--gris700);
+    }
+    input, select{
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid var(--gris200);
+      font-size:14px;
+      background:#fff;
+    }
+    input:focus, select:focus{
+      outline:none;
+      border-color:rgba(123,15,26,.45);
+      box-shadow:0 0 0 4px rgba(123,15,26,.12);
+    }
+
+    .grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media(max-width:820px){ .grid{ grid-template-columns:1fr; } }
+
+    .section{
+      border:1px solid var(--gris200);
+      border-radius:14px;
+      padding:14px;
+    }
+
+    table{ width:100%; border-collapse:collapse; }
+    th, td{ padding:10px; border-bottom:1px solid var(--gris200); font-size:13px; vertical-align:top; }
+    th{
+      background:rgba(123,15,26,.06);
+      text-transform:uppercase;
+      font-size:12px;
+      letter-spacing:.04em;
+      text-align:left;
+    }
+
+    .badge{
+      padding:5px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      background:rgba(123,15,26,.08);
+      color:var(--vino);
+      display:inline-block;
+    }
+
+    .error{
+      background:rgba(160,27,42,.10);
+      border:1px solid rgba(160,27,42,.35);
+      padding:10px 12px;
+      border-radius:12px;
+      color:var(--vino);
+      font-weight:700;
+      margin-top:10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div class="brand">
+        <!-- Si tu archivo es JPG, cambia logo.png por logo.jpg -->
+        <img src="{{ url_for('static', filename='img/logo.png') }}" alt="A3">
+        <div>
+          <strong>A3 Laboratorio Veterinario</strong>
+          <span>Solicitud de recogida de muestras</span>
+        </div>
+      </div>
+
+      <div class="nav">
+        <a class="btn" href="/">Nueva solicitud</a>
+        <a class="btn primary" href="/solicitudes">Ver solicitudes</a>
+        {% if session.get("logged_in") %}
+          <a class="btn" href="/logout">Logout</a>
+        {% else %}
+          <a class="btn" href="/login">Login</a>
+        {% endif %}
+      </div>
+    </div>
+
+    {% block content %}{% endblock %}
+  </div>
+</body>
+</html>
+

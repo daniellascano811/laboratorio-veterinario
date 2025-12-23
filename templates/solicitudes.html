@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% set title = "Solicitudes" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h1>Solicitudes (últimas 50)</h1>
+    <p class="subtitle">Vista interna (requiere login).</p>
+  </div>
+
+  <div class="card-body">
+    {% if solicitudes|length == 0 %}
+      <p>No hay solicitudes todavía.</p>
+    {% else %}
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Zona</th>
+            <th>Dueño</th>
+            <th>Tel</th>
+            <th>Mascota</th>
+            <th>Muestra</th>
+            <th>Dirección</th>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Estado</th>
+            <th>Creado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in solicitudes %}
+          <tr>
+            <td>{{ s.id }}</td>
+            <td>{{ s.zona }}</td>
+            <td>{{ s.dueno }}</td>
+            <td>{{ s.tel }}</td>
+            <td>{{ s.mascota }}</td>
+            <td>{{ s.muestra }}</td>
+            <td>{{ s.direccion }}</td>
+            <td>{{ s.fecha }}</td>
+            <td>{{ s.horario }}</td>
+            <td><span class="badge">{{ s.estado }}</span></td>
+            <td>{{ s.creado }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

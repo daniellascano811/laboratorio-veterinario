@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% set title = "Solicitud recibida" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <h1>Solicitud recibida ✅</h1>
+    <p class="subtitle">Guardada en SQLite correctamente.</p>
+  </div>
+  <div class="card-body">
+    <a class="btn primary" href="/">Crear otra solicitud</a>
+    <a class="btn" href="/solicitudes" style="margin-left:8px;">Ver solicitudes</a>
+  </div>
+</div>
+{% endblock %}
