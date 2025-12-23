@@ -9,3 +9,7 @@ venv/
 .DS_Store
 *.exe
 *.msi
+laboratorio.db
+instance/
+*.db
+

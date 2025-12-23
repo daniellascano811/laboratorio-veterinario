@@ -7,14 +7,17 @@ from flask import Flask, render_template, request, redirect, url_for, session, a
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
+
+# ✅ Secret key para sesiones (Render = variable de entorno)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-cambia-esto")
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "laboratorio.db")
+# ✅ DB en carpeta escribible (instance/)
+os.makedirs(app.instance_path, exist_ok=True)
+DB_PATH = os.path.join(app.instance_path, "laboratorio.db")
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -54,12 +57,11 @@ def init_db():
         )
     """)
 
-    # ✅ Admin por defecto: admin / 1234
-    cur.execute("SELECT COUNT(*) as c FROM veterinarios WHERE rol='admin'")
-    c = cur.fetchone()["c"]
-    if c == 0:
+    # ✅ Admin por defecto: admin / 1234 (si no existe)
+    cur.execute("SELECT COUNT(*) AS c FROM veterinarios WHERE rol='admin'")
+    if cur.fetchone()["c"] == 0:
         cur.execute("""
-            INSERT INTO veterinarios (usuario, nombre, password_hash, rol, creado)
+            INSERT INTO veterinarios(usuario, nombre, password_hash, rol, creado)
             VALUES (?, ?, ?, 'admin', ?)
         """, (
             "admin",
@@ -116,11 +118,9 @@ def solicitud():
     fecha = (f.get("fecha") or "").strip()
     horario = (f.get("horario") or "").strip()
 
-    # Validación mínima
     if not all([dueno_nombre, dueno_telefono, mascota_nombre, mascota_tipo, muestra_tipo, direccion, zona]):
         return render_template("confirmacion.html", ok=False, mensaje="Faltan datos obligatorios.", title="Error")
 
-    # Edad opcional
     try:
         mascota_edad_int = int(mascota_edad) if mascota_edad not in (None, "") else None
     except:
@@ -128,7 +128,6 @@ def solicitud():
 
     conn = get_db()
     cur = conn.cursor()
-
     cur.execute("""
         INSERT INTO solicitudes (
             zona, dueno_nombre, dueno_telefono, dueno_email,
@@ -143,7 +142,6 @@ def solicitud():
         "pendiente",
         datetime.now().isoformat(timespec="seconds")
     ))
-
     conn.commit()
     conn.close()
 
@@ -222,9 +220,7 @@ def crear_vet():
                 INSERT INTO veterinarios(usuario, nombre, password_hash, rol, creado)
                 VALUES (?,?,?,?,?)
             """, (
-                usuario,
-                nombre,
-                generate_password_hash(clave),
+                usuario, nombre, generate_password_hash(clave),
                 "vet",
                 datetime.now().isoformat(timespec="seconds")
             ))
@@ -237,8 +233,13 @@ def crear_vet():
     return render_template("crear_vet.html", error=error, title="Crear veterinario")
 
 
-# ✅ Inicializa BD al arrancar
-init_db()
+# ✅ init DB al arrancar
+try:
+    init_db()
+except Exception as e:
+    # Esto aparecerá en Render logs
+    print("ERROR init_db:", repr(e))
+
 
 if __name__ == "__main__":
     app.run(debug=True)
