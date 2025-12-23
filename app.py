@@ -16,12 +16,12 @@ from flask import (
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-DATABASE_URL = os.environ.get("DATABASE_URL")  # Render (Postgres)
+DATABASE_URL = os.environ.get("DATABASE_URL")      # Render (Postgres)
 SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local
 
 
 # =========================
-# DB HELPERS (Postgres o SQLite)
+# DB HELPERS
 # =========================
 def using_postgres() -> bool:
     return bool(DATABASE_URL)
@@ -42,17 +42,21 @@ def get_sqlite_conn():
 
 
 def get_db():
-    # Retorna (conn, "pg"|"sqlite")
+    # retorna (conn, engine)
     if using_postgres():
         return get_pg_conn(), "pg"
     return get_sqlite_conn(), "sqlite"
+
+
+def sql_placeholder(engine):
+    return "%s" if engine == "pg" else "?"
 
 
 def fetchone_dict(row, engine):
     if row is None:
         return None
     if engine == "pg":
-        return row  # ya es dict_row
+        return row
     return dict(row)
 
 
@@ -60,11 +64,6 @@ def fetchall_list(rows, engine):
     if engine == "pg":
         return rows
     return [dict(r) for r in rows]
-
-
-def sql_placeholder(engine):
-    # Postgres usa %s, sqlite usa ?
-    return "%s" if engine == "pg" else "?"
 
 
 # =========================
@@ -99,7 +98,6 @@ def init_db():
         );
         """)
     else:
-        # SQLite
         cur.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -126,8 +124,7 @@ def init_db():
 
     ph = sql_placeholder(engine)
     cur.execute(f"SELECT 1 FROM usuarios WHERE usuario={ph}", ("admin",))
-    exists = cur.fetchone()
-    if exists is None:
+    if cur.fetchone() is None:
         cur.execute(
             f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
             ("admin", "Administrador", "1234")
@@ -139,7 +136,7 @@ def init_db():
     print(f"DB inicializada OK ({'Postgres' if engine=='pg' else 'SQLite'})")
 
 
-# Inicializa DB al arrancar (local o Render)
+# Inicializa DB al arrancar
 try:
     init_db()
 except Exception as e:
@@ -147,7 +144,7 @@ except Exception as e:
 
 
 # =========================
-# LOGIN REQUIRED
+# AUTH
 # =========================
 def login_required(view):
     @wraps(view)
@@ -206,7 +203,15 @@ def login():
 
     if request.method == "POST":
         usuario = (request.form.get("usuario") or "").strip()
-        password = (request.form.get("password") or "").strip()
+
+        # FIX MÓVIL: acepta password o clave, y elimina espacios
+        password = (
+            request.form.get("password")
+            or request.form.get("clave")
+            or ""
+        ).strip()
+
+        print(f"[LOGIN] usuario='{usuario}' password_len={len(password)}")
 
         conn, engine = get_db()
         cur = conn.cursor()
@@ -217,6 +222,7 @@ def login():
             (usuario, password)
         )
         user = cur.fetchone()
+
         cur.close()
         conn.close()
 
@@ -257,11 +263,15 @@ def ver_solicitudes():
 
     solicitudes = fetchall_list(solicitudes, engine)
 
-    return render_template("solicitudes.html", solicitudes=solicitudes, title="Solicitudes")
+    return render_template(
+        "solicitudes.html",
+        solicitudes=solicitudes,
+        title="Solicitudes"
+    )
 
 
 # =========================
-# START LOCAL
+# START
 # =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
