@@ -1,8 +1,10 @@
 import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
-
+import sqlite3
 from functools import wraps
+
+import psycopg
+from psycopg.rows import dict_row
+
 from flask import (
     Flask, render_template, request,
     redirect, url_for, session
@@ -14,75 +16,133 @@ from flask import (
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL")  # Render (Postgres)
+SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local
 
 
 # =========================
-# DB CONNECTION
+# DB HELPERS (Postgres o SQLite)
 # =========================
+def using_postgres() -> bool:
+    return bool(DATABASE_URL)
+
+
+def get_pg_conn():
+    dsn = DATABASE_URL
+    if "sslmode=" not in dsn:
+        join_char = "&" if "?" in dsn else "?"
+        dsn = f"{dsn}{join_char}sslmode=require"
+    return psycopg.connect(dsn, row_factory=dict_row)
+
+
+def get_sqlite_conn():
+    conn = sqlite3.connect(SQLITE_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
 def get_db():
-    if not DATABASE_URL:
-        raise RuntimeError("DATABASE_URL no está configurada en variables de entorno.")
-    return psycopg2.connect(
-        DATABASE_URL,
-        cursor_factory=RealDictCursor,
-        sslmode="require"
-    )
+    # Retorna (conn, "pg"|"sqlite")
+    if using_postgres():
+        return get_pg_conn(), "pg"
+    return get_sqlite_conn(), "sqlite"
+
+
+def fetchone_dict(row, engine):
+    if row is None:
+        return None
+    if engine == "pg":
+        return row  # ya es dict_row
+    return dict(row)
+
+
+def fetchall_list(rows, engine):
+    if engine == "pg":
+        return rows
+    return [dict(r) for r in rows]
+
+
+def sql_placeholder(engine):
+    # Postgres usa %s, sqlite usa ?
+    return "%s" if engine == "pg" else "?"
 
 
 # =========================
-# INIT DB (crea tablas si no existen)
+# INIT DB
 # =========================
 def init_db():
-    conn = get_db()
+    conn, engine = get_db()
     cur = conn.cursor()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS usuarios (
-        id SERIAL PRIMARY KEY,
-        usuario TEXT UNIQUE NOT NULL,
-        nombre TEXT NOT NULL,
-        password TEXT NOT NULL
-    );
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS solicitudes (
-        id SERIAL PRIMARY KEY,
-        zona TEXT,
-        dueno TEXT,
-        tel TEXT,
-        mascota TEXT,
-        muestra TEXT,
-        direccion TEXT,
-        fecha DATE NULL,
-        horario TEXT,
-        estado TEXT DEFAULT 'pendiente',
-        creado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """)
-
-    # Admin por defecto
-    cur.execute("SELECT 1 FROM usuarios WHERE usuario='admin'")
-    existe = cur.fetchone()
-    if not existe:
+    if engine == "pg":
         cur.execute("""
-            INSERT INTO usuarios (usuario, nombre, password)
-            VALUES ('admin', 'Administrador', '1234')
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id SERIAL PRIMARY KEY,
+            usuario TEXT UNIQUE NOT NULL,
+            nombre TEXT NOT NULL,
+            password TEXT NOT NULL
+        );
         """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS solicitudes (
+            id SERIAL PRIMARY KEY,
+            zona TEXT,
+            dueno TEXT,
+            tel TEXT,
+            mascota TEXT,
+            muestra TEXT,
+            direccion TEXT,
+            fecha DATE NULL,
+            horario TEXT,
+            estado TEXT DEFAULT 'pendiente',
+            creado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+    else:
+        # SQLite
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario TEXT UNIQUE NOT NULL,
+            nombre TEXT NOT NULL,
+            password TEXT NOT NULL
+        );
+        """)
+        cur.execute("""
+        CREATE TABLE IF NOT EXISTS solicitudes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            zona TEXT,
+            dueno TEXT,
+            tel TEXT,
+            mascota TEXT,
+            muestra TEXT,
+            direccion TEXT,
+            fecha TEXT NULL,
+            horario TEXT,
+            estado TEXT DEFAULT 'pendiente',
+            creado DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+        """)
+
+    ph = sql_placeholder(engine)
+    cur.execute(f"SELECT 1 FROM usuarios WHERE usuario={ph}", ("admin",))
+    exists = cur.fetchone()
+    if exists is None:
+        cur.execute(
+            f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
+            ("admin", "Administrador", "1234")
+        )
 
     conn.commit()
     cur.close()
     conn.close()
+    print(f"DB inicializada OK ({'Postgres' if engine=='pg' else 'SQLite'})")
 
 
-# ✅ IMPORTANTE: esto hace que Render también cree tablas/admin
-# (Gunicorn importa el archivo, así que esto sí corre)
+# Inicializa DB al arrancar (local o Render)
 try:
     init_db()
 except Exception as e:
-    # En producción, si algo falla, Render lo muestra en logs.
-    # No rompemos el arranque si por algún motivo la DB está temporalmente no lista.
     print("init_db() error:", e)
 
 
@@ -115,20 +175,23 @@ def crear_solicitud():
     muestra = request.form.get("muestra_tipo")
     direccion = request.form.get("direccion")
 
-    # ✅ Si fecha viene vacía, manda None (NULL) a Postgres
-    fecha_str = request.form.get("fecha", "").strip()
+    fecha_str = (request.form.get("fecha") or "").strip()
     fecha = fecha_str if fecha_str else None
 
-    horario = request.form.get("horario", "").strip() or None
+    horario = (request.form.get("horario") or "").strip() or None
 
-    conn = get_db()
+    conn, engine = get_db()
     cur = conn.cursor()
+    ph = sql_placeholder(engine)
 
-    cur.execute("""
+    cur.execute(
+        f"""
         INSERT INTO solicitudes
         (zona, dueno, tel, mascota, muestra, direccion, fecha, horario)
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
-    """, (zona, dueno, tel, mascota, muestra, direccion, fecha, horario))
+        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
+        """,
+        (zona, dueno, tel, mascota, muestra, direccion, fecha, horario)
+    )
 
     conn.commit()
     cur.close()
@@ -142,18 +205,22 @@ def login():
     error = None
 
     if request.method == "POST":
-        usuario = request.form.get("usuario", "").strip()
-        password = request.form.get("password", "").strip()
+        usuario = (request.form.get("usuario") or "").strip()
+        password = (request.form.get("password") or "").strip()
 
-        conn = get_db()
+        conn, engine = get_db()
         cur = conn.cursor()
+        ph = sql_placeholder(engine)
+
         cur.execute(
-            "SELECT * FROM usuarios WHERE usuario=%s AND password=%s",
+            f"SELECT * FROM usuarios WHERE usuario={ph} AND password={ph}",
             (usuario, password)
         )
         user = cur.fetchone()
         cur.close()
         conn.close()
+
+        user = fetchone_dict(user, engine)
 
         if user:
             session["logged_in"] = True
@@ -174,7 +241,7 @@ def logout():
 @app.route("/solicitudes")
 @login_required
 def ver_solicitudes():
-    conn = get_db()
+    conn, engine = get_db()
     cur = conn.cursor()
 
     cur.execute("""
@@ -188,15 +255,14 @@ def ver_solicitudes():
     cur.close()
     conn.close()
 
-    return render_template(
-        "solicitudes.html",
-        solicitudes=solicitudes,
-        title="Solicitudes"
-    )
+    solicitudes = fetchall_list(solicitudes, engine)
+
+    return render_template("solicitudes.html", solicitudes=solicitudes, title="Solicitudes")
 
 
 # =========================
 # START LOCAL
 # =========================
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="127.0.0.1", port=port, debug=True)

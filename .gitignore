@@ -2,14 +2,20 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
 .env
 .venv/
 venv/
+
 *.log
 .DS_Store
 *.exe
 *.msi
+
+# Bases de datos locales
 laboratorio.db
-instance/
+app_local.db
 *.db
+
+instance/
 
