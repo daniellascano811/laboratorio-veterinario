@@ -1,89 +1,52 @@
-{% extends "base.html" %}
-{% block content %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nueva solicitud</title>
 
-<div class="card">
-  <div class="card-header">
-    <h1>Solicitud de recogida</h1>
-    <p class="subtitle">Completa los datos para programar la recogida</p>
-  </div>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
 
-  <div class="card-body">
-    <form method="POST" action="/solicitud">
+{% set active_page = 'form' %}
+{% include "navbar.html" %}
 
-      <div class="grid">
-        <div class="section">
-          <h3>Datos del dueño</h3>
+<main class="container">
+  <h1>Nueva solicitud de recogida</h1>
 
-          <label>Nombre completo</label>
-          <input name="dueno_nombre" required>
+  <form method="POST" action="{{ url_for('crear_solicitud') }}" class="card">
 
-          <label>Teléfono / WhatsApp</label>
-          <input name="dueno_telefono" required>
+    <label>Zona</label>
+    <input type="text" name="zona" required>
 
-          <label>Correo</label>
-          <input name="dueno_email" type="email">
-        </div>
+    <label>Nombre del dueño</label>
+    <input type="text" name="dueno_nombre" required>
 
-        <div class="section">
-          <h3>Datos de la mascota</h3>
+    <label>Teléfono</label>
+    <input type="tel" name="dueno_telefono" required>
 
-          <label>Nombre</label>
-          <input name="mascota_nombre" required>
+    <label>Nombre de la mascota</label>
+    <input type="text" name="mascota_nombre">
 
-          <label>Tipo</label>
-          <select name="mascota_tipo">
-            <option>Perro</option>
-            <option>Gato</option>
-            <option>Otro</option>
-          </select>
+    <label>Tipo de muestra</label>
+    <input type="text" name="muestra_tipo" required>
 
-          <label>Edad</label>
-          <input name="mascota_edad" type="number">
+    <label>Dirección</label>
+    <input type="text" name="direccion" required>
 
-          <label>Raza</label>
-          <input name="mascota_raza">
-        </div>
-      </div>
+    <label>Fecha</label>
+    <input type="date" name="fecha">
 
-      <div class="section" style="margin-top:14px;">
-        <h3>Recogida</h3>
+    <label>Horario</label>
+    <input type="text" name="horario" placeholder="Ej: Mañana (8:00 - 10:00)">
 
-        <label>Zona</label>
-        <select name="zona" required>
-          <option>Norte</option>
-          <option>Sur</option>
-          <option>Este</option>
-          <option>Oeste</option>
-        </select>
+    <button type="submit" class="btn-primary">
+      Enviar solicitud
+    </button>
 
-        <label>Tipo de muestra</label>
-        <select name="muestra_tipo" required>
-          <option>Orina</option>
-          <option>Heces</option>
-          <option>Sangre</option>
-        </select>
+  </form>
+</main>
 
-        <label>Dirección</label>
-        <input name="direccion" required>
-
-        <label>Fecha</label>
-        <input name="fecha" type="date" required>
-
-        <label>Horario</label>
-        <select name="horario">
-          <option>Mañana (8:00 - 10:00)</option>
-          <option>Mañana (10:00 - 12:00)</option>
-          <option>Tarde (1:00 - 3:00)</option>
-          <option>Tarde (3:00 - 5:00)</option>
-        </select>
-      </div>
-
-      <button class="btn primary" style="margin-top:16px;">
-        Enviar solicitud
-      </button>
-
-    </form>
-  </div>
-</div>
-
-{% endblock %}
+</body>
+</html>

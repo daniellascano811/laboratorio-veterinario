@@ -1,188 +1,59 @@
-{% extends "base.html" %}
-{% set title = "Solicitudes" %}
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solicitudes</title>
 
-{% block content %}
-<div class="card">
-  <div class="card-header">
-    <h1>Solicitudes (últimas 50)</h1>
-    <p class="subtitle">Vista interna (requiere login).</p>
-  </div>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
 
-  <div class="card-body">
-    {% if solicitudes|length == 0 %}
-      <p>No hay solicitudes todavía.</p>
-    {% else %}
+{% set active_page = 'solicitudes' %}
+{% include "navbar.html" %}
 
-      <!-- ✅ TABLA (PC / Tablet grande) -->
-      <div class="table-wrap desktop-only">
-        <table class="nice-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Zona</th>
-              <th>Dueño</th>
-              <th>Tel</th>
-              <th>Mascota</th>
-              <th>Muestra</th>
-              <th>Dirección</th>
-              <th>Fecha</th>
-              <th>Horario</th>
-              <th>Estado</th>
-              <th>Creado</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for s in solicitudes %}
-            <tr>
-              <td>{{ s.id }}</td>
-              <td>{{ s.zona }}</td>
-              <td>{{ s.dueno }}</td>
-              <td>{{ s.tel }}</td>
-              <td>{{ s.mascota }}</td>
-              <td>{{ s.muestra }}</td>
-              <td class="wrap">{{ s.direccion }}</td>
-              <td>{{ s.fecha }}</td>
-              <td>{{ s.horario }}</td>
-              <td><span class="badge">{{ s.estado }}</span></td>
-              <td class="muted">{{ s.creado }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+<main class="container">
+  <h1>Solicitudes (últimas 50)</h1>
 
-      <!-- ✅ CARDS (TELÉFONO) -->
-      <div class="mobile-only">
-        <div class="cards">
+  {% if solicitudes %}
+    <div class="table-wrapper">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Zona</th>
+            <th>Dueño</th>
+            <th>Teléfono</th>
+            <th>Mascota</th>
+            <th>Muestra</th>
+            <th>Dirección</th>
+            <th>Fecha</th>
+            <th>Horario</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
           {% for s in solicitudes %}
-          <div class="mini-card">
-            <div class="row">
-              <div class="id">#{{ s.id }}</div>
-              <span class="badge">{{ s.estado }}</span>
-            </div>
-
-            <div class="grid">
-              <div>
-                <div class="k">Zona</div>
-                <div class="v">{{ s.zona }}</div>
-              </div>
-              <div>
-                <div class="k">Fecha</div>
-                <div class="v">{{ s.fecha }}</div>
-              </div>
-              <div>
-                <div class="k">Horario</div>
-                <div class="v">{{ s.horario }}</div>
-              </div>
-              <div>
-                <div class="k">Muestra</div>
-                <div class="v">{{ s.muestra }}</div>
-              </div>
-            </div>
-
-            <div class="sep"></div>
-
-            <div class="k">Dueño</div>
-            <div class="v strong">{{ s.dueno }}</div>
-
-            <div class="k">Tel</div>
-            <div class="v"><a href="tel:{{ s.tel }}">{{ s.tel }}</a></div>
-
-            <div class="k">Mascota</div>
-            <div class="v">{{ s.mascota }}</div>
-
-            <div class="k">Dirección</div>
-            <div class="v">{{ s.direccion }}</div>
-
-            <div class="k muted">Creado</div>
-            <div class="v muted">{{ s.creado }}</div>
-          </div>
+          <tr>
+            <td>{{ s.id }}</td>
+            <td>{{ s.zona }}</td>
+            <td>{{ s.dueno }}</td>
+            <td>{{ s.tel }}</td>
+            <td>{{ s.mascota }}</td>
+            <td>{{ s.muestra }}</td>
+            <td>{{ s.direccion }}</td>
+            <td>{{ s.fecha or '' }}</td>
+            <td>{{ s.horario or '' }}</td>
+            <td>{{ s.estado }}</td>
+          </tr>
           {% endfor %}
-        </div>
-      </div>
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>No hay solicitudes registradas.</p>
+  {% endif %}
+</main>
 
-    {% endif %}
-  </div>
-</div>
-
-<style>
-/* ========= Responsive helpers ========= */
-.desktop-only { display: block; }
-.mobile-only { display: none; }
-
-@media (max-width: 860px){
-  .desktop-only { display: none; }
-  .mobile-only { display: block; }
-}
-
-/* ========= Table ========= */
-.table-wrap{
-  width:100%;
-  overflow-x:auto;
-  border-radius: 14px;
-  border: 1px solid rgba(0,0,0,.06);
-}
-.nice-table{
-  width:100%;
-  border-collapse: collapse;
-  min-width: 980px;
-  background: #fff;
-}
-.nice-table th, .nice-table td{
-  padding: 12px 12px;
-  border-bottom: 1px solid rgba(0,0,0,.06);
-  vertical-align: top;
-}
-.nice-table thead th{
-  font-size: 12px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: #6b7280;
-  background: rgba(0,0,0,.02);
-}
-.wrap { white-space: normal; }
-
-/* ========= Cards (mobile) ========= */
-.cards{ display:flex; flex-direction: column; gap: 12px; }
-.mini-card{
-  background: #fff;
-  border: 1px solid rgba(0,0,0,.06);
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.06);
-}
-.row{
-  display:flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-.id{ font-weight: 800; font-size: 14px; }
-.grid{
-  margin-top: 10px;
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.sep{
-  height:1px;
-  background: rgba(0,0,0,.06);
-  margin: 12px 0;
-}
-.k{ font-size: 12px; color:#6b7280; margin-top: 8px; }
-.v{ font-size: 14px; color:#111827; }
-.strong{ font-weight: 700; }
-
-.badge{
-  display:inline-flex;
-  align-items:center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(150, 0, 0, .08);
-  color: #7a0b12;
-  font-weight: 700;
-  font-size: 12px;
-}
-.muted{ color:#6b7280; }
-</style>
-{% endblock %}
+</body>
+</html>
