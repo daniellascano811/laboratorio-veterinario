@@ -1,36 +1,46 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
   <title>Nueva solicitud</title>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
-{% set active_page = 'form' %}
-{% include "navbar.html" %}
+<!-- NAVBAR -->
+<header class="navbar">
+  <div class="logo">
+    <strong>A3</strong>
+    <span>Laboratorio Veterinario</span>
+  </div>
 
+  <nav class="nav-buttons">
+    <a href="/" class="btn btn-active">Nueva solicitud</a>
+    <a href="/solicitudes" class="btn">Ver solicitudes</a>
+  </nav>
+</header>
+
+<!-- CONTENIDO -->
 <main class="container">
-  <h1>Nueva solicitud de recogida</h1>
+  <h1>Nueva solicitud</h1>
 
-  <form method="POST" action="{{ url_for('crear_solicitud') }}" class="card">
+  <form action="/solicitud" method="POST" class="form-box">
 
     <label>Zona</label>
     <input type="text" name="zona" required>
 
-    <label>Nombre del dueño</label>
-    <input type="text" name="dueno_nombre" required>
+    <label>Dueño</label>
+    <input type="text" name="dueno" required>
 
     <label>Teléfono</label>
-    <input type="tel" name="dueno_telefono" required>
+    <input type="text" name="tel" required>
 
-    <label>Nombre de la mascota</label>
-    <input type="text" name="mascota_nombre">
+    <label>Mascota</label>
+    <input type="text" name="mascota" required>
 
-    <label>Tipo de muestra</label>
-    <input type="text" name="muestra_tipo" required>
+    <label>Muestra</label>
+    <input type="text" name="muestra" required>
 
     <label>Dirección</label>
     <input type="text" name="direccion" required>
@@ -39,12 +49,9 @@
     <input type="date" name="fecha">
 
     <label>Horario</label>
-    <input type="text" name="horario" placeholder="Ej: Mañana (8:00 - 10:00)">
+    <input type="text" name="horario">
 
-    <button type="submit" class="btn-primary">
-      Enviar solicitud
-    </button>
-
+    <button type="submit" class="btn-submit">Enviar solicitud</button>
   </form>
 </main>
 
