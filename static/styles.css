@@ -163,4 +163,22 @@ input {
   font-weight:900;
   letter-spacing:.5px;
 }
+/* ===== Navegación ===== */
+.nav-buttons a {
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #7b0f1a;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.nav-buttons a.active {
+  background: #7b0f1a;
+  color: white;
+}
+
+.nav-buttons a:not(.active):hover {
+  background: #f2e6e8;
+}
 
