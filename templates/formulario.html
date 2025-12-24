@@ -3,55 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <title>Nueva solicitud</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
-<!-- NAVBAR -->
-<header class="navbar">
-  <div class="logo">
-    <strong>A3</strong>
-    <span>Laboratorio Veterinario</span>
-  </div>
+{% set active_page = 'form' %}
+{% include "navbar.html" %}
 
-  <nav class="nav-buttons">
-    <a href="/" class="btn btn-active">Nueva solicitud</a>
-    <a href="/solicitudes" class="btn">Ver solicitudes</a>
-  </nav>
-</header>
-
-<!-- CONTENIDO -->
 <main class="container">
   <h1>Nueva solicitud</h1>
 
-  <form action="/solicitud" method="POST" class="form-box">
+  <form method="POST" action="{{ url_for('crear_solicitud') }}" class="form-grid">
 
-    <label>Zona</label>
-    <input type="text" name="zona" required>
+    <label>Zona
+      <input type="text" name="zona" required>
+    </label>
 
-    <label>Dueño</label>
-    <input type="text" name="dueno" required>
+    <label>Dueño
+      <input type="text" name="dueno_nombre" required>
+    </label>
 
-    <label>Teléfono</label>
-    <input type="text" name="tel" required>
+    <label>Teléfono
+      <input type="text" name="dueno_telefono" required>
+    </label>
 
-    <label>Mascota</label>
-    <input type="text" name="mascota" required>
+    <label>Mascota
+      <input type="text" name="mascota_nombre">
+    </label>
 
-    <label>Muestra</label>
-    <input type="text" name="muestra" required>
+    <label>Muestra
+      <input type="text" name="muestra_tipo">
+    </label>
 
-    <label>Dirección</label>
-    <input type="text" name="direccion" required>
+    <label>Dirección
+      <input type="text" name="direccion">
+    </label>
 
-    <label>Fecha</label>
-    <input type="date" name="fecha">
+    <label>Fecha
+      <input type="date" name="fecha">
+    </label>
 
-    <label>Horario</label>
-    <input type="text" name="horario">
+    <label>Horario
+      <input type="text" name="horario">
+    </label>
 
-    <button type="submit" class="btn-submit">Enviar solicitud</button>
+    <button type="submit" class="btn-primary">
+      Enviar solicitud
+    </button>
   </form>
 </main>
 
