@@ -10,19 +10,24 @@ from flask import (
     redirect, url_for, session
 )
 
+# =========================
+# CONFIG
+# =========================
 app = Flask(__name__)
+
+# IMPORTANTÍSIMO: en Render debes definir SECRET_KEY fijo (no cambies)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-DATABASE_URL = os.environ.get("DATABASE_URL")  # Render Postgres
-SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local fallback
+DATABASE_URL = os.environ.get("DATABASE_URL")  # Render (Postgres)
+SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "1234")
-FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "1")  # "1" o "0"
+FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "0") == "1"
 
 
 # =========================
-# DB helpers (Postgres o SQLite)
+# DB HELPERS (Postgres o SQLite)
 # =========================
 def using_postgres() -> bool:
     return bool(DATABASE_URL)
@@ -30,9 +35,12 @@ def using_postgres() -> bool:
 
 def get_pg_conn():
     dsn = DATABASE_URL
+
+    # fuerza SSL en Render si no viene
     if "sslmode=" not in dsn:
         join_char = "&" if "?" in dsn else "?"
         dsn = f"{dsn}{join_char}sslmode=require"
+
     return psycopg.connect(dsn, row_factory=dict_row)
 
 
@@ -43,7 +51,7 @@ def get_sqlite_conn():
 
 
 def get_db():
-    # Retorna (conn, engine)
+    # retorna (conn, engine)
     if using_postgres():
         return get_pg_conn(), "pg"
     return get_sqlite_conn(), "sqlite"
@@ -64,6 +72,7 @@ def fetchall_list(rows, engine):
 
 
 def sql_placeholder(engine):
+    # Postgres usa %s, sqlite usa ?
     return "%s" if engine == "pg" else "?"
 
 
@@ -91,6 +100,7 @@ def init_db():
             tel TEXT,
             mascota TEXT,
             muestra TEXT,
+            muestra_otro TEXT,
             direccion TEXT,
             fecha DATE NULL,
             horario TEXT,
@@ -115,6 +125,7 @@ def init_db():
             tel TEXT,
             mascota TEXT,
             muestra TEXT,
+            muestra_otro TEXT,
             direccion TEXT,
             fecha TEXT NULL,
             horario TEXT,
@@ -123,19 +134,19 @@ def init_db():
         );
         """)
 
-    # Admin
     ph = sql_placeholder(engine)
-    cur.execute(f"SELECT * FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
-    row = cur.fetchone()
-    user = fetchone_dict(row, engine)
 
-    if user is None:
+    # Admin sync (crea o actualiza)
+    cur.execute(f"SELECT * FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
+    admin = cur.fetchone()
+
+    if admin is None:
         cur.execute(
             f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
             (ADMIN_USER, "Administrador", ADMIN_PASSWORD)
         )
     else:
-        if FORCE_ADMIN_SYNC == "1":
+        if FORCE_ADMIN_SYNC:
             cur.execute(
                 f"UPDATE usuarios SET password={ph} WHERE usuario={ph}",
                 (ADMIN_PASSWORD, ADMIN_USER)
@@ -147,14 +158,16 @@ def init_db():
     print(f"DB inicializada OK ({'Postgres' if engine=='pg' else 'SQLite'})")
 
 
+# Inicializa DB al arrancar
 try:
     init_db()
 except Exception as e:
+    # No tumba el server, pero lo verás en logs
     print("init_db() error:", e)
 
 
 # =========================
-# AUTH
+# LOGIN REQUIRED
 # =========================
 def login_required(view):
     @wraps(view)
@@ -170,24 +183,20 @@ def login_required(view):
 # =========================
 @app.route("/")
 def home():
-    return render_template("formulario.html", active="form")
+    return render_template("formulario.html", title="Nueva solicitud", active="form")
 
 
 @app.route("/solicitud", methods=["POST"])
 def crear_solicitud():
-    # Compat: si en algún template viejo venían otros nombres, los aceptamos también.
-    zona = request.form.get("zona") or ""
-    dueno = request.form.get("dueno") or request.form.get("dueno_nombre") or ""
-    tel = request.form.get("tel") or request.form.get("dueno_telefono") or ""
-    mascota = request.form.get("mascota") or request.form.get("mascota_nombre") or ""
-    direccion = request.form.get("direccion") or ""
+    zona = (request.form.get("zona") or "").strip()
+    dueno = (request.form.get("dueno") or "").strip()
+    tel = (request.form.get("tel") or "").strip()
+    mascota = (request.form.get("mascota") or "").strip()
 
-    muestra_tipo = request.form.get("muestra_tipo") or request.form.get("muestra") or ""
-    muestra_otro = (request.form.get("muestra_otro") or "").strip()
-    if muestra_tipo.lower() == "otro" and muestra_otro:
-        muestra = f"Otro: {muestra_otro}"
-    else:
-        muestra = muestra_tipo
+    muestra = (request.form.get("muestra") or "").strip()
+    muestra_otro = (request.form.get("muestra_otro") or "").strip() or None
+
+    direccion = (request.form.get("direccion") or "").strip() or None
 
     fecha_str = (request.form.get("fecha") or "").strip()
     fecha = fecha_str if fecha_str else None
@@ -201,17 +210,17 @@ def crear_solicitud():
     cur.execute(
         f"""
         INSERT INTO solicitudes
-        (zona, dueno, tel, mascota, muestra, direccion, fecha, horario)
-        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
+        (zona, dueno, tel, mascota, muestra, muestra_otro, direccion, fecha, horario)
+        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
         """,
-        (zona, dueno, tel, mascota, muestra, direccion, fecha, horario)
+        (zona, dueno, tel, mascota, muestra, muestra_otro, direccion, fecha, horario)
     )
 
     conn.commit()
     cur.close()
     conn.close()
 
-    return render_template("confirmacion.html", active="form")
+    return render_template("confirmacion.html", title="Solicitud enviada", active="form")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -230,11 +239,11 @@ def login():
             f"SELECT * FROM usuarios WHERE usuario={ph} AND password={ph}",
             (usuario, password)
         )
-        row = cur.fetchone()
+        user = cur.fetchone()
         cur.close()
         conn.close()
 
-        user = fetchone_dict(row, engine)
+        user = fetchone_dict(user, engine)
 
         if user:
             session["logged_in"] = True
@@ -243,18 +252,19 @@ def login():
         else:
             error = "Usuario o clave incorrecta"
 
-    return render_template("login.html", error=error, active="login")
+    return render_template("login.html", error=error, title="Login", active="")
 
 
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("home"))
+    return redirect(url_for("login"))
 
 
 @app.route("/solicitudes")
 @login_required
 def ver_solicitudes():
+    # si aquí falla, Render mostrará el error exacto en logs
     conn, engine = get_db()
     cur = conn.cursor()
 
@@ -264,16 +274,19 @@ def ver_solicitudes():
         ORDER BY creado DESC
         LIMIT 50
     """)
-    rows = cur.fetchall()
+    solicitudes = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    solicitudes = fetchall_list(rows, engine)
-    return render_template("solicitudes.html", solicitudes=solicitudes, active="solicitudes")
+    solicitudes = fetchall_list(solicitudes, engine)
+
+    return render_template("solicitudes.html", solicitudes=solicitudes, title="Solicitudes", active="solicitudes")
 
 
-# Local run (Render usa gunicorn)
+# =========================
+# START LOCAL
+# =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)

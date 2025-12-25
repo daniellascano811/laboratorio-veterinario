@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login</title>
+  <title>{{ title or "Login" }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -19,9 +19,8 @@
     </div>
 
     <nav class="nav">
-      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
-      <a class="nav-btn {{ 'active' if active=='login' else '' }}" href="{{ url_for('login') }}">Login</a>
+      <a class="nav-btn" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
     </nav>
   </div>
 </header>
@@ -29,21 +28,21 @@
 <main class="container">
   <h1>Login</h1>
 
-  <section class="card">
-    <form method="POST" class="grid grid-2">
+  <section class="card" style="max-width:520px;">
+    <form method="POST">
       <label>Usuario
         <input name="usuario" required>
       </label>
 
       <label>Clave
-        <input name="password" type="password" required>
+        <input type="password" name="password" required>
       </label>
 
       {% if error %}
-        <p class="error">{{ error }}</p>
+        <p style="margin:10px 0 0 0; color:#b00020; font-weight:800;">{{ error }}</p>
       {% endif %}
 
-      <button class="btn-primary" type="submit">Ingresar</button>
+      <button class="btn-primary" type="submit" style="margin-top:14px;">Entrar</button>
     </form>
   </section>
 </main>

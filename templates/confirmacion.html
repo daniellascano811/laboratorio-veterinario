@@ -19,13 +19,8 @@
     </div>
 
     <nav class="nav">
-      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
-      {% if session.get('logged_in') %}
-        <a class="nav-btn" href="{{ url_for('logout') }}">Logout</a>
-      {% else %}
-        <a class="nav-btn {{ 'active' if active=='login' else '' }}" href="{{ url_for('login') }}">Login</a>
-      {% endif %}
+      <a class="nav-btn active" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
     </nav>
   </div>
 </header>
@@ -33,10 +28,11 @@
 <main class="container">
   <h1>✅ Solicitud enviada</h1>
   <section class="card">
-    <p class="muted">La solicitud fue registrada correctamente.</p>
-    <div style="display:flex; gap:10px; flex-wrap:wrap;">
-      <a class="nav-btn active" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+    <p style="margin:0; font-size:16px; font-weight:700;">
+      Gracias. Tu solicitud fue registrada correctamente.
+    </p>
+    <div style="margin-top:14px;">
+      <a class="nav-btn active" href="{{ url_for('home') }}">Crear otra solicitud</a>
     </div>
   </section>
 </main>

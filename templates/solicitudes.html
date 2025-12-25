@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Solicitudes</title>
+  <title>{{ title or "Solicitudes" }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -39,6 +39,7 @@
           <th>Tel</th>
           <th>Mascota</th>
           <th>Muestra</th>
+          <th>¿Cuál?</th>
           <th>Dirección</th>
           <th>Fecha</th>
           <th>Horario</th>
@@ -50,16 +51,17 @@
         {% for s in solicitudes %}
         <tr>
           <td>{{ s.id }}</td>
-          <td>{{ s.zona }}</td>
-          <td>{{ s.dueno }}</td>
-          <td>{{ s.tel }}</td>
-          <td>{{ s.mascota }}</td>
-          <td>{{ s.muestra }}</td>
-          <td>{{ s.direccion }}</td>
-          <td>{{ s.fecha }}</td>
-          <td>{{ s.horario }}</td>
-          <td><span class="badge">{{ s.estado }}</span></td>
-          <td>{{ s.creado }}</td>
+          <td>{{ s.zona or '' }}</td>
+          <td>{{ s.dueno or '' }}</td>
+          <td>{{ s.tel or '' }}</td>
+          <td>{{ s.mascota or '' }}</td>
+          <td>{{ s.muestra or '' }}</td>
+          <td>{{ s.muestra_otro or '' }}</td>
+          <td>{{ s.direccion or '' }}</td>
+          <td>{{ s.fecha or '' }}</td>
+          <td>{{ s.horario or '' }}</td>
+          <td><span class="badge">{{ s.estado or 'pendiente' }}</span></td>
+          <td>{{ s.creado or '' }}</td>
         </tr>
         {% endfor %}
       </tbody>

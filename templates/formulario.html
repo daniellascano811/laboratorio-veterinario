@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nueva solicitud</title>
+  <title>{{ title or "Nueva solicitud" }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -21,11 +21,6 @@
     <nav class="nav">
       <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
       <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
-      {% if session.get('logged_in') %}
-        <a class="nav-btn" href="{{ url_for('logout') }}">Logout</a>
-      {% else %}
-        <a class="nav-btn {{ 'active' if active=='login' else '' }}" href="{{ url_for('login') }}">Login</a>
-      {% endif %}
     </nav>
   </div>
 </header>
@@ -35,7 +30,6 @@
 
   <section class="card">
     <form class="grid" method="POST" action="{{ url_for('crear_solicitud') }}">
-
       <label>Zona
         <input name="zona" placeholder="Ej: Norte" required>
       </label>
@@ -45,7 +39,7 @@
       </label>
 
       <label>Teléfono
-        <input name="tel" inputmode="numeric" placeholder="Ej: 3001234567" required>
+        <input name="tel" placeholder="Ej: 3001234567" required>
       </label>
 
       <label>Mascota
@@ -53,7 +47,8 @@
       </label>
 
       <label>Muestra
-        <select name="muestra_tipo" id="muestra_tipo" class="select">
+        <select name="muestra" id="muestra" required>
+          <option value="" selected disabled>Selecciona</option>
           <option value="Orina">Orina</option>
           <option value="Heces">Heces</option>
           <option value="Sangre">Sangre</option>
@@ -61,8 +56,8 @@
         </select>
       </label>
 
-      <label id="muestra_otro_wrap" class="hidden">¿Cuál?
-        <input name="muestra_otro" placeholder="Describe la muestra">
+      <label id="wrap-otro" class="hidden">¿Cuál?
+        <input name="muestra_otro" id="muestra_otro" placeholder="Describe la muestra">
       </label>
 
       <label>Dirección
@@ -83,18 +78,23 @@
 </main>
 
 <script>
-  const tipo = document.getElementById("muestra_tipo");
-  const wrap = document.getElementById("muestra_otro_wrap");
+  const sel = document.getElementById("muestra");
+  const wrapOtro = document.getElementById("wrap-otro");
+  const inpOtro = document.getElementById("muestra_otro");
+
   function toggleOtro(){
-    if(tipo.value === "Otro"){
-      wrap.classList.remove("hidden");
+    const v = sel.value;
+    if (v === "Otro") {
+      wrapOtro.classList.remove("hidden");
+      inpOtro.required = true;
     } else {
-      wrap.classList.add("hidden");
-      const input = wrap.querySelector("input");
-      if(input) input.value = "";
+      wrapOtro.classList.add("hidden");
+      inpOtro.required = false;
+      inpOtro.value = "";
     }
   }
-  tipo.addEventListener("change", toggleOtro);
+
+  sel.addEventListener("change", toggleOtro);
   toggleOtro();
 </script>
 
