@@ -1,29 +1,31 @@
-{% extends "base.html" %}
-{% block content %}
-<div class="card" style="max-width:680px;margin:0 auto;">
-  <div class="card-header">
-    <h1>Login</h1>
-    <p class="subtitle">Acceso interno</p>
-  </div>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
 
-  <div class="card-body">
-    <form method="POST">
-      <label>Usuario</label>
+<main class="container">
+  <h1>Login</h1>
+
+  {% if error %}
+    <p class="error">{{ error }}</p>
+  {% endif %}
+
+  <form class="grid" method="POST">
+    <label>Usuario
       <input name="usuario" required>
-
-      <label>Contraseña</label>
+    </label>
+    <label>Clave
       <input name="password" type="password" required>
+    </label>
 
-      <button class="btn primary" type="submit" style="margin-top:14px;">Entrar</button>
-    </form>
+    <button class="btn-primary" type="submit">Entrar</button>
+  </form>
+</main>
 
-    {% if error %}
-      <div class="error" style="margin-top:12px;">{{ error }}</div>
-    {% endif %}
-
-    <p style="margin-top:14px;color:#6b7280;font-size:13px;">
-      Admin por defecto: <b>admin</b> / <b>1234</b>
-    </p>
-  </div>
-</div>
-{% endblock %}
+</body>
+</html>

@@ -1,44 +1,47 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Nueva solicitud</title>
-
-  <!-- CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
-{% set active_page = 'form' %}
-{% include "navbar.html" %}
+<header class="navbar">
+  <div class="brand">A3 <span>Laboratorio Veterinario</span></div>
+  <nav class="nav">
+    <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
+    <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+  </nav>
+</header>
 
 <main class="container">
   <h1>Nueva solicitud</h1>
 
-  <form method="POST" action="{{ url_for('crear_solicitud') }}" class="form-grid">
-
+  <form class="grid" method="POST" action="{{ url_for('crear_solicitud') }}">
     <label>Zona
-      <input type="text" name="zona" required>
+      <input name="zona" required>
     </label>
 
     <label>Dueño
-      <input type="text" name="dueno_nombre" required>
+      <input name="dueno" required>
     </label>
 
     <label>Teléfono
-      <input type="text" name="dueno_telefono" required>
+      <input name="tel" required>
     </label>
 
     <label>Mascota
-      <input type="text" name="mascota_nombre">
+      <input name="mascota">
     </label>
 
     <label>Muestra
-      <input type="text" name="muestra_tipo">
+      <input name="muestra">
     </label>
 
     <label>Dirección
-      <input type="text" name="direccion">
+      <input name="direccion">
     </label>
 
     <label>Fecha
@@ -46,12 +49,10 @@
     </label>
 
     <label>Horario
-      <input type="text" name="horario">
+      <input name="horario">
     </label>
 
-    <button type="submit" class="btn-primary">
-      Enviar solicitud
-    </button>
+    <button class="btn-primary" type="submit">Enviar solicitud</button>
   </form>
 </main>
 

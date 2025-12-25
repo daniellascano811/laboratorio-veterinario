@@ -1,0 +1,30 @@
+{# templates/navbar.html #}
+{% set ap = active_page|default('') %}
+
+<header class="navbar">
+  <div class="logo">
+    <div class="logo-badge">A3</div>
+    <div class="logo-text">
+      <strong>A3 Laboratorio Veterinario</strong>
+      <span>Solicitud de recogida de muestras</span>
+    </div>
+  </div>
+
+  <nav class="nav-buttons">
+    <a href="{{ url_for('home') }}"
+       class="nav-btn {{ 'active' if ap=='form' else '' }}">
+      Nueva solicitud
+    </a>
+
+    <a href="{{ url_for('ver_solicitudes') }}"
+       class="nav-btn {{ 'active' if ap=='solicitudes' else '' }}">
+      Ver solicitudes
+    </a>
+
+    {% if session.get("logged_in") %}
+      <a href="{{ url_for('logout') }}" class="nav-btn">
+        Logout
+      </a>
+    {% endif %}
+  </nav>
+</header>

@@ -1,52 +1,51 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Solicitudes</title>
-
-  <!-- CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
-{% set active_page = 'solicitudes' %}
-{% include "navbar.html" %}
+<header class="navbar">
+  <div class="brand">A3 <span>Laboratorio Veterinario</span></div>
+  <nav class="nav">
+    <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
+    <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+    <a class="nav-btn" href="{{ url_for('logout') }}">Logout</a>
+  </nav>
+</header>
 
 <main class="container">
   <h1>Solicitudes (últimas 50)</h1>
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Zona</th>
-        <th>Dueño</th>
-        <th>Tel</th>
-        <th>Mascota</th>
-        <th>Muestra</th>
-        <th>Dirección</th>
-        <th>Fecha</th>
-        <th>Horario</th>
-        <th>Estado</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for s in solicitudes %}
-      <tr>
-        <td>{{ s.id }}</td>
-        <td>{{ s.zona }}</td>
-        <td>{{ s.dueno }}</td>
-        <td>{{ s.tel }}</td>
-        <td>{{ s.mascota }}</td>
-        <td>{{ s.muestra }}</td>
-        <td>{{ s.direccion }}</td>
-        <td>{{ s.fecha }}</td>
-        <td>{{ s.horario }}</td>
-        <td>{{ s.estado }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Zona</th><th>Dueño</th><th>Tel</th><th>Mascota</th>
+          <th>Muestra</th><th>Dirección</th><th>Fecha</th><th>Horario</th><th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in solicitudes %}
+        <tr>
+          <td>{{ s.id }}</td>
+          <td>{{ s.zona }}</td>
+          <td>{{ s.dueno }}</td>
+          <td>{{ s.tel }}</td>
+          <td>{{ s.mascota }}</td>
+          <td>{{ s.muestra }}</td>
+          <td>{{ s.direccion }}</td>
+          <td>{{ s.fecha }}</td>
+          <td>{{ s.horario }}</td>
+          <td>{{ s.estado }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </main>
 
 </body>

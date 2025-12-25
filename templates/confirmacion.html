@@ -1,15 +1,17 @@
-{% extends "base.html" %}
-{% set title = "Solicitud recibida" %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Enviado</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
 
-{% block content %}
-<div class="card">
-  <div class="card-header">
-    <h1>Solicitud recibida ✅</h1>
-    <p class="subtitle">Guardada en SQLite correctamente.</p>
-  </div>
-  <div class="card-body">
-    <a class="btn primary" href="/">Crear otra solicitud</a>
-    <a class="btn" href="/solicitudes" style="margin-left:8px;">Ver solicitudes</a>
-  </div>
-</div>
-{% endblock %}
+<main class="container">
+  <h1>✅ Solicitud enviada</h1>
+  <a class="nav-btn active" href="{{ url_for('home') }}">Crear otra</a>
+</main>
+
+</body>
+</html>
