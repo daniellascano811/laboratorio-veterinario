@@ -9,13 +9,6 @@ venv/
 
 *.log
 .DS_Store
-*.exe
-*.msi
 
 # Bases de datos locales
-laboratorio.db
-app_local.db
 *.db
-
-instance/
-

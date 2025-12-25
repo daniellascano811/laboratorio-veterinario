@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 from functools import wraps
 
@@ -15,32 +16,56 @@ from flask import (
 # =========================
 app = Flask(__name__)
 
-# IMPORTANTÍSIMO: en Render debes definir SECRET_KEY fijo (no cambies)
+# SECRET_KEY (para sesiones)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-DATABASE_URL = os.environ.get("DATABASE_URL")  # Render (Postgres)
+# Variables
+DATABASE_URL_RAW = os.environ.get("DATABASE_URL")  # Render Postgres
 SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local
 
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "1234")
-FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "0") == "1"
 
 
 # =========================
-# DB HELPERS (Postgres o SQLite)
+# HELPERS: SANITIZE DATABASE_URL
 # =========================
-def using_postgres() -> bool:
-    return bool(DATABASE_URL)
+def clean_database_url(url: str | None) -> str | None:
+    if not url:
+        return None
 
+    # 1) quitar espacios extremos y comillas envolventes
+    dsn = url.strip().strip('"').strip("'")
 
-def get_pg_conn():
-    dsn = DATABASE_URL
+    # 2) quitar saltos de línea / tabs invisibles dentro (esto mata el sslmode roto)
+    dsn = re.sub(r"[\r\n\t ]+", "", dsn)
 
-    # fuerza SSL en Render si no viene
-    if "sslmode=" not in dsn:
+    # 3) normalizar scheme
+    if dsn.startswith("postgres://"):
+        dsn = "postgresql://" + dsn[len("postgres://"):]
+
+    # 4) si ya viene sslmode, arreglarlo:
+    #    - quita comillas del valor (sslmode="require" -> sslmode=require)
+    dsn = re.sub(r"sslmode=['\"]?([^&'\"]+)['\"]?", r"sslmode=\1", dsn)
+
+    # 5) forzar sslmode=require (sin comillas)
+    if "sslmode=" in dsn:
+        dsn = re.sub(r"sslmode=[^&]+", "sslmode=require", dsn)
+    else:
         join_char = "&" if "?" in dsn else "?"
         dsn = f"{dsn}{join_char}sslmode=require"
 
+    return dsn
+
+
+def using_postgres() -> bool:
+    return bool(DATABASE_URL_RAW)
+
+
+def get_pg_conn():
+    dsn = clean_database_url(DATABASE_URL_RAW)
+    if not dsn:
+        raise RuntimeError("DATABASE_URL no está configurada.")
     return psycopg.connect(dsn, row_factory=dict_row)
 
 
@@ -51,7 +76,7 @@ def get_sqlite_conn():
 
 
 def get_db():
-    # retorna (conn, engine)
+    # Retorna (conn, engine)
     if using_postgres():
         return get_pg_conn(), "pg"
     return get_sqlite_conn(), "sqlite"
@@ -61,7 +86,7 @@ def fetchone_dict(row, engine):
     if row is None:
         return None
     if engine == "pg":
-        return row
+        return row  # dict_row
     return dict(row)
 
 
@@ -72,7 +97,6 @@ def fetchall_list(rows, engine):
 
 
 def sql_placeholder(engine):
-    # Postgres usa %s, sqlite usa ?
     return "%s" if engine == "pg" else "?"
 
 
@@ -100,7 +124,6 @@ def init_db():
             tel TEXT,
             mascota TEXT,
             muestra TEXT,
-            muestra_otro TEXT,
             direccion TEXT,
             fecha DATE NULL,
             horario TEXT,
@@ -125,7 +148,6 @@ def init_db():
             tel TEXT,
             mascota TEXT,
             muestra TEXT,
-            muestra_otro TEXT,
             direccion TEXT,
             fecha TEXT NULL,
             horario TEXT,
@@ -135,35 +157,26 @@ def init_db():
         """)
 
     ph = sql_placeholder(engine)
+    cur.execute(f"SELECT 1 FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
+    exists = cur.fetchone()
 
-    # Admin sync (crea o actualiza)
-    cur.execute(f"SELECT * FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
-    admin = cur.fetchone()
-
-    if admin is None:
+    if exists is None:
         cur.execute(
             f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
             (ADMIN_USER, "Administrador", ADMIN_PASSWORD)
         )
-    else:
-        if FORCE_ADMIN_SYNC:
-            cur.execute(
-                f"UPDATE usuarios SET password={ph} WHERE usuario={ph}",
-                (ADMIN_PASSWORD, ADMIN_USER)
-            )
 
     conn.commit()
     cur.close()
     conn.close()
-    print(f"DB inicializada OK ({'Postgres' if engine=='pg' else 'SQLite'})")
 
 
 # Inicializa DB al arrancar
 try:
     init_db()
 except Exception as e:
-    # No tumba el server, pero lo verás en logs
     print("init_db() error:", e)
+    # Importante: NO rompemos el arranque para que el servicio viva y puedas ver logs.
 
 
 # =========================
@@ -188,15 +201,13 @@ def home():
 
 @app.route("/solicitud", methods=["POST"])
 def crear_solicitud():
-    zona = (request.form.get("zona") or "").strip()
-    dueno = (request.form.get("dueno") or "").strip()
-    tel = (request.form.get("tel") or "").strip()
-    mascota = (request.form.get("mascota") or "").strip()
-
-    muestra = (request.form.get("muestra") or "").strip()
-    muestra_otro = (request.form.get("muestra_otro") or "").strip() or None
-
-    direccion = (request.form.get("direccion") or "").strip() or None
+    # OJO: estos names deben coincidir con el HTML
+    zona = request.form.get("zona")
+    dueno = request.form.get("dueno")
+    tel = request.form.get("tel")
+    mascota = request.form.get("mascota")
+    muestra = request.form.get("muestra")
+    direccion = request.form.get("direccion")
 
     fecha_str = (request.form.get("fecha") or "").strip()
     fecha = fecha_str if fecha_str else None
@@ -210,10 +221,10 @@ def crear_solicitud():
     cur.execute(
         f"""
         INSERT INTO solicitudes
-        (zona, dueno, tel, mascota, muestra, muestra_otro, direccion, fecha, horario)
-        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
+        (zona, dueno, tel, mascota, muestra, direccion, fecha, horario)
+        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
         """,
-        (zona, dueno, tel, mascota, muestra, muestra_otro, direccion, fecha, horario)
+        (zona, dueno, tel, mascota, muestra, direccion, fecha, horario)
     )
 
     conn.commit()
@@ -252,7 +263,7 @@ def login():
         else:
             error = "Usuario o clave incorrecta"
 
-    return render_template("login.html", error=error, title="Login", active="")
+    return render_template("login.html", error=error, title="Login", active="login")
 
 
 @app.route("/logout")
@@ -264,7 +275,6 @@ def logout():
 @app.route("/solicitudes")
 @login_required
 def ver_solicitudes():
-    # si aquí falla, Render mostrará el error exacto en logs
     conn, engine = get_db()
     cur = conn.cursor()
 
@@ -281,7 +291,12 @@ def ver_solicitudes():
 
     solicitudes = fetchall_list(solicitudes, engine)
 
-    return render_template("solicitudes.html", solicitudes=solicitudes, title="Solicitudes", active="solicitudes")
+    return render_template(
+        "solicitudes.html",
+        solicitudes=solicitudes,
+        title="Solicitudes",
+        active="solicitudes"
+    )
 
 
 # =========================
