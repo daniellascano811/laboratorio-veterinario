@@ -33,8 +33,17 @@
     <table>
       <thead>
         <tr>
-          <th>ID</th><th>Zona</th><th>Dueño</th><th>Tel</th><th>Mascota</th>
-          <th>Muestra</th><th>Dirección</th><th>Fecha</th><th>Horario</th><th>Estado</th>
+          <th>ID</th>
+          <th>Zona</th>
+          <th>Dueño</th>
+          <th>Tel</th>
+          <th>Mascota</th>
+          <th>Muestra</th>
+          <th>Dirección</th>
+          <th>Fecha</th>
+          <th>Horario</th>
+          <th>Estado</th>
+          <th>Creado</th>
         </tr>
       </thead>
       <tbody>
@@ -50,6 +59,7 @@
           <td>{{ s.fecha }}</td>
           <td>{{ s.horario }}</td>
           <td><span class="badge">{{ s.estado }}</span></td>
+          <td>{{ s.creado }}</td>
         </tr>
         {% endfor %}
       </tbody>

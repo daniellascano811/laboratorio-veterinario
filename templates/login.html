@@ -8,23 +8,44 @@
 </head>
 <body>
 
+<header class="navbar">
+  <div class="navbar-inner">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='img/logo-a3.png') }}" alt="Logo A3">
+      <div class="brand-title">
+        <strong>A3 Laboratorio Veterinario</strong>
+        <span>Solicitud de recogida de muestras</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+      <a class="nav-btn {{ 'active' if active=='login' else '' }}" href="{{ url_for('login') }}">Login</a>
+    </nav>
+  </div>
+</header>
+
 <main class="container">
   <h1>Login</h1>
 
-  {% if error %}
-    <p class="error">{{ error }}</p>
-  {% endif %}
+  <section class="card">
+    <form method="POST" class="grid grid-2">
+      <label>Usuario
+        <input name="usuario" required>
+      </label>
 
-  <form class="grid" method="POST">
-    <label>Usuario
-      <input name="usuario" required>
-    </label>
-    <label>Clave
-      <input name="password" type="password" required>
-    </label>
+      <label>Clave
+        <input name="password" type="password" required>
+      </label>
 
-    <button class="btn-primary" type="submit">Entrar</button>
-  </form>
+      {% if error %}
+        <p class="error">{{ error }}</p>
+      {% endif %}
+
+      <button class="btn-primary" type="submit">Ingresar</button>
+    </form>
+  </section>
 </main>
 
 </body>

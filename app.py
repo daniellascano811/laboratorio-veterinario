@@ -10,25 +10,19 @@ from flask import (
     redirect, url_for, session
 )
 
-# =========================
-# CONFIG
-# =========================
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-DATABASE_URL = os.environ.get("DATABASE_URL")  # Render (Postgres)
-SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local (SQLite)
+DATABASE_URL = os.environ.get("DATABASE_URL")  # Render Postgres
+SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local fallback
 
-# Admin por variables (Render) o fallback
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "1234")
-
-# Si quieres forzar que siempre exista el admin (recomendado)
-FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "1") == "1"
+FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "1")  # "1" o "0"
 
 
 # =========================
-# DB HELPERS (Postgres o SQLite)
+# DB helpers (Postgres o SQLite)
 # =========================
 def using_postgres() -> bool:
     return bool(DATABASE_URL)
@@ -49,7 +43,7 @@ def get_sqlite_conn():
 
 
 def get_db():
-    # retorna (conn, engine)
+    # Retorna (conn, engine)
     if using_postgres():
         return get_pg_conn(), "pg"
     return get_sqlite_conn(), "sqlite"
@@ -129,20 +123,19 @@ def init_db():
         );
         """)
 
-    # Admin por defecto / sync por env
+    # Admin
     ph = sql_placeholder(engine)
-
     cur.execute(f"SELECT * FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
-    admin_row = cur.fetchone()
+    row = cur.fetchone()
+    user = fetchone_dict(row, engine)
 
-    if admin_row is None:
+    if user is None:
         cur.execute(
             f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
             (ADMIN_USER, "Administrador", ADMIN_PASSWORD)
         )
     else:
-        # Si FORCE_ADMIN_SYNC=1, actualiza password al de env vars
-        if FORCE_ADMIN_SYNC:
+        if FORCE_ADMIN_SYNC == "1":
             cur.execute(
                 f"UPDATE usuarios SET password={ph} WHERE usuario={ph}",
                 (ADMIN_PASSWORD, ADMIN_USER)
@@ -154,7 +147,6 @@ def init_db():
     print(f"DB inicializada OK ({'Postgres' if engine=='pg' else 'SQLite'})")
 
 
-# Inicializa DB al arrancar (local o Render)
 try:
     init_db()
 except Exception as e:
@@ -162,7 +154,7 @@ except Exception as e:
 
 
 # =========================
-# LOGIN REQUIRED
+# AUTH
 # =========================
 def login_required(view):
     @wraps(view)
@@ -178,23 +170,24 @@ def login_required(view):
 # =========================
 @app.route("/")
 def home():
-    # home SIEMPRE es formulario (sin login)
-    return render_template("formulario.html", title="Nueva solicitud", active="form")
+    return render_template("formulario.html", active="form")
 
 
 @app.route("/solicitud", methods=["POST"])
 def crear_solicitud():
-    zona = (request.form.get("zona") or "").strip()
-    dueno = (request.form.get("dueno") or "").strip()
-    tel = (request.form.get("tel") or "").strip()
-    mascota = (request.form.get("mascota") or "").strip()
+    # Compat: si en algún template viejo venían otros nombres, los aceptamos también.
+    zona = request.form.get("zona") or ""
+    dueno = request.form.get("dueno") or request.form.get("dueno_nombre") or ""
+    tel = request.form.get("tel") or request.form.get("dueno_telefono") or ""
+    mascota = request.form.get("mascota") or request.form.get("mascota_nombre") or ""
+    direccion = request.form.get("direccion") or ""
 
-    muestra = (request.form.get("muestra") or "").strip()
+    muestra_tipo = request.form.get("muestra_tipo") or request.form.get("muestra") or ""
     muestra_otro = (request.form.get("muestra_otro") or "").strip()
-    if muestra == "Otro" and muestra_otro:
+    if muestra_tipo.lower() == "otro" and muestra_otro:
         muestra = f"Otro: {muestra_otro}"
-
-    direccion = (request.form.get("direccion") or "").strip()
+    else:
+        muestra = muestra_tipo
 
     fecha_str = (request.form.get("fecha") or "").strip()
     fecha = fecha_str if fecha_str else None
@@ -218,7 +211,7 @@ def crear_solicitud():
     cur.close()
     conn.close()
 
-    return render_template("confirmacion.html", title="Solicitud enviada", active="form")
+    return render_template("confirmacion.html", active="form")
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -237,12 +230,11 @@ def login():
             f"SELECT * FROM usuarios WHERE usuario={ph} AND password={ph}",
             (usuario, password)
         )
-        user = cur.fetchone()
-
+        row = cur.fetchone()
         cur.close()
         conn.close()
 
-        user = fetchone_dict(user, engine)
+        user = fetchone_dict(row, engine)
 
         if user:
             session["logged_in"] = True
@@ -251,7 +243,7 @@ def login():
         else:
             error = "Usuario o clave incorrecta"
 
-    return render_template("login.html", error=error, title="Login", active="")
+    return render_template("login.html", error=error, active="login")
 
 
 @app.route("/logout")
@@ -272,20 +264,16 @@ def ver_solicitudes():
         ORDER BY creado DESC
         LIMIT 50
     """)
-    solicitudes = cur.fetchall()
+    rows = cur.fetchall()
 
     cur.close()
     conn.close()
 
-    solicitudes = fetchall_list(solicitudes, engine)
+    solicitudes = fetchall_list(rows, engine)
+    return render_template("solicitudes.html", solicitudes=solicitudes, active="solicitudes")
 
-    return render_template("solicitudes.html", solicitudes=solicitudes, title="Solicitudes", active="solicitudes")
 
-
-# =========================
-# START LOCAL
-# =========================
+# Local run (Render usa gunicorn)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    # En local puedes dejar 127.0.0.1. En Render no se usa esto porque corre gunicorn.
     app.run(host="0.0.0.0", port=port, debug=True)

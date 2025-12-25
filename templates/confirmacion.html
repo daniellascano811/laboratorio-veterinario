@@ -3,14 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Enviado</title>
+  <title>Solicitud enviada</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
 
+<header class="navbar">
+  <div class="navbar-inner">
+    <div class="brand">
+      <img src="{{ url_for('static', filename='img/logo-a3.png') }}" alt="Logo A3">
+      <div class="brand-title">
+        <strong>A3 Laboratorio Veterinario</strong>
+        <span>Solicitud de recogida de muestras</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+      {% if session.get('logged_in') %}
+        <a class="nav-btn" href="{{ url_for('logout') }}">Logout</a>
+      {% else %}
+        <a class="nav-btn {{ 'active' if active=='login' else '' }}" href="{{ url_for('login') }}">Login</a>
+      {% endif %}
+    </nav>
+  </div>
+</header>
+
 <main class="container">
   <h1>✅ Solicitud enviada</h1>
-  <a class="nav-btn active" href="{{ url_for('home') }}">Crear otra</a>
+  <section class="card">
+    <p class="muted">La solicitud fue registrada correctamente.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a class="nav-btn active" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+    </div>
+  </section>
 </main>
 
 </body>
