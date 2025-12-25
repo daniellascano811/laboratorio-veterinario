@@ -19,8 +19,8 @@
     </div>
 
     <nav class="nav">
-      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+      <a class="nav-btn active" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
     </nav>
   </div>
 </header>
@@ -29,18 +29,18 @@
   <h1>Nueva solicitud</h1>
 
   <section class="card">
-    <form class="grid" method="POST" action="{{ url_for('crear_solicitud') }}">
+    <form class="form-vertical" method="POST" action="{{ url_for('crear_solicitud') }}">
 
       <label>Zona
-        <input name="zona" required placeholder="Ej: Norte">
+        <input name="zona" placeholder="Ej: Norte" required>
       </label>
 
       <label>Dueño
-        <input name="dueno" required placeholder="Nombre y apellido">
+        <input name="dueno" placeholder="Nombre y apellido" required>
       </label>
 
       <label>Teléfono
-        <input name="tel" required inputmode="tel" placeholder="Ej: 3001234567">
+        <input name="tel" placeholder="Ej: 3001234567" required>
       </label>
 
       <label>Mascota
@@ -48,8 +48,8 @@
       </label>
 
       <label>Muestra
-        <select name="muestra" id="muestra" required>
-          <option value="" selected disabled>Selecciona</option>
+        <select name="muestra_tipo" onchange="toggleOtro()" required>
+          <option value="">Selecciona</option>
           <option value="Orina">Orina</option>
           <option value="Heces">Heces</option>
           <option value="Sangre">Sangre</option>
@@ -57,9 +57,11 @@
         </select>
       </label>
 
-      <label id="muestra_otro_wrap" class="hidden">¿Cuál?
-        <input name="muestra_otro" id="muestra_otro" placeholder="Describe la muestra">
-      </label>
+      <div id="muestra_otro_wrap" style="display:none;">
+        <label>¿Cuál?
+          <input name="muestra_otro" placeholder="Describe la muestra">
+        </label>
+      </div>
 
       <label>Dirección
         <input name="direccion" placeholder="Ej: Calle 97 #70-89">
@@ -79,19 +81,11 @@
 </main>
 
 <script>
-  const muestra = document.getElementById("muestra");
+function toggleOtro(){
+  const select = document.querySelector('select[name="muestra_tipo"]');
   const wrap = document.getElementById("muestra_otro_wrap");
-  const inputOtro = document.getElementById("muestra_otro");
-
-  function toggleOtro() {
-    const isOtro = muestra.value === "Otro";
-    wrap.classList.toggle("hidden", !isOtro);
-    inputOtro.required = isOtro;
-    if (!isOtro) inputOtro.value = "";
-  }
-
-  muestra.addEventListener("change", toggleOtro);
-  toggleOtro();
+  wrap.style.display = select.value === "Otro" ? "block" : "none";
+}
 </script>
 
 </body>

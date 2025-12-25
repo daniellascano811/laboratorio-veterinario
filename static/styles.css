@@ -92,3 +92,24 @@ select:focus{
     grid-template-columns: 1fr;
   }
 }
+/* ===== FORMULARIO VERTICAL ===== */
+.form-vertical{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+.form-vertical label{
+  display:flex;
+  flex-direction:column;
+  font-weight:800;
+  gap:8px;
+}
+
+.form-vertical input,
+.form-vertical select{
+  padding:12px;
+  border-radius:14px;
+  border:1px solid #cfcfcf;
+  font-size:15px;
+}
