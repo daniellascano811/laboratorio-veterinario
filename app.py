@@ -16,45 +16,61 @@ from flask import (
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-DATABASE_URL = os.environ.get("DATABASE_URL")  # Render (Postgres)
-SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local
+# Render (Postgres)
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
+# Local (SQLite)
+SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")
+
+# Admin (por ENV)
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "1234")
+
+# Si FORCE_ADMIN_SYNC=1, crea/asegura admin en DB
 FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "0").strip() == "1"
 
 
 # =========================
 # DB HELPERS (Postgres o SQLite)
 # =========================
+def normalize_pg_url(url: str) -> str:
+    """
+    Render a veces guarda el DATABASE_URL bien, pero si lo pegas con saltos de línea
+    o espacios, libpq lo interpreta mal (y sale el error de missing '=').
+
+    Esto:
+    - strip() quita espacios al inicio/fin
+    - split/join elimina saltos de línea y espacios internos (copiado raro)
+    - asegura sslmode=require si no existe
+    """
+    if not url:
+        return ""
+
+    # Quita espacios/saltos de linea comunes de un copy/paste
+    u = url.strip()
+    u = "".join(u.split())  # elimina \n, \r, tabs, espacios sueltos
+
+    # Acepta postgres:// y lo convierte
+    if u.startswith("postgres://"):
+        u = "postgresql://" + u[len("postgres://"):]
+
+    # Asegura sslmode=require si no viene
+    if "sslmode=" not in u:
+        join_char = "&" if "?" in u else "?"
+        u = f"{u}{join_char}sslmode=require"
+
+    return u
+
+
 def using_postgres() -> bool:
-    return bool(DATABASE_URL)
-
-
-def normalize_dsn_sslmode(dsn: str) -> str:
-    """
-    Render suele requerir SSL.
-    - Si no trae sslmode, lo agregamos como sslmode=require
-    - Si trae algo raro tipo sslmode="require o 'require', lo normalizamos
-    """
-    if not dsn:
-        return dsn
-
-    # limpia comillas sueltas que causan: invalid sslmode value: '"require'
-    dsn = dsn.replace('sslmode="require', "sslmode=require")
-    dsn = dsn.replace("sslmode='require", "sslmode=require")
-    dsn = dsn.replace('sslmode="require"', "sslmode=require")
-    dsn = dsn.replace("sslmode='require'", "sslmode=require")
-
-    if "sslmode=" not in dsn:
-        join_char = "&" if "?" in dsn else "?"
-        dsn = f"{dsn}{join_char}sslmode=require"
-
-    return dsn
+    return bool(DATABASE_URL and DATABASE_URL.strip())
 
 
 def get_pg_conn():
-    dsn = normalize_dsn_sslmode(DATABASE_URL)
+    dsn = normalize_pg_url(DATABASE_URL or "")
+    # Si el dsn quedó vacío, cae a sqlite
+    if not dsn:
+        raise RuntimeError("DATABASE_URL vacío o inválido.")
     return psycopg.connect(dsn, row_factory=dict_row)
 
 
@@ -65,7 +81,7 @@ def get_sqlite_conn():
 
 
 def get_db():
-    # Retorna (conn, "pg"|"sqlite")
+    # Retorna (conn, engine) donde engine = "pg" o "sqlite"
     if using_postgres():
         return get_pg_conn(), "pg"
     return get_sqlite_conn(), "sqlite"
@@ -148,22 +164,24 @@ def init_db():
         );
         """)
 
-    # admin user
+    # Crear / sincronizar admin
     ph = sql_placeholder(engine)
 
-    cur.execute(f"SELECT * FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
-    existing = cur.fetchone()
+    cur.execute(f"SELECT 1 FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
+    exists = cur.fetchone()
 
-    if existing is None:
-        cur.execute(
-            f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
-            (ADMIN_USER, "Administrador", ADMIN_PASSWORD)
-        )
-    elif FORCE_ADMIN_SYNC:
-        cur.execute(
-            f"UPDATE usuarios SET password={ph} WHERE usuario={ph}",
-            (ADMIN_PASSWORD, ADMIN_USER)
-        )
+    if (exists is None) or FORCE_ADMIN_SYNC:
+        # upsert simple (si existe, actualiza password/nombre)
+        if exists is None:
+            cur.execute(
+                f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
+                (ADMIN_USER, "Administrador", ADMIN_PASSWORD)
+            )
+        else:
+            cur.execute(
+                f"UPDATE usuarios SET password={ph}, nombre={ph} WHERE usuario={ph}",
+                (ADMIN_PASSWORD, "Administrador", ADMIN_USER)
+            )
 
     conn.commit()
     cur.close()
@@ -175,7 +193,7 @@ def init_db():
 try:
     init_db()
 except Exception as e:
-    # No rompemos el arranque: Render igual levanta el servicio y ves el error en logs
+    # NO tumbamos el arranque, pero lo verás en logs
     print("init_db() error:", e)
 
 
@@ -201,13 +219,15 @@ def home():
 
 @app.route("/solicitud", methods=["POST"])
 def crear_solicitud():
-    zona = request.form.get("zona")
-    dueno = request.form.get("dueno")
-    tel = request.form.get("tel")
-    mascota = request.form.get("mascota")
-    muestra = request.form.get("muestra")
-    cual = request.form.get("cual")
-    direccion = request.form.get("direccion")
+    zona = (request.form.get("zona") or "").strip()
+    dueno = (request.form.get("dueno") or "").strip()
+    tel = (request.form.get("tel") or "").strip()
+    mascota = (request.form.get("mascota") or "").strip()
+
+    muestra = (request.form.get("muestra") or "").strip()
+    cual = (request.form.get("cual") or "").strip()
+
+    direccion = (request.form.get("direccion") or "").strip()
 
     fecha_str = (request.form.get("fecha") or "").strip()
     fecha = fecha_str if fecha_str else None
@@ -264,7 +284,7 @@ def login():
         else:
             error = "Usuario o clave incorrecta"
 
-    return render_template("login.html", error=error, title="Login", active="")
+    return render_template("login.html", error=error, title="Login", active="login")
 
 
 @app.route("/logout")
@@ -292,12 +312,7 @@ def ver_solicitudes():
 
     solicitudes = fetchall_list(solicitudes, engine)
 
-    return render_template(
-        "solicitudes.html",
-        solicitudes=solicitudes,
-        title="Solicitudes",
-        active="solicitudes"
-    )
+    return render_template("solicitudes.html", solicitudes=solicitudes, title="Solicitudes", active="solicitudes")
 
 
 # =========================
@@ -306,4 +321,3 @@ def ver_solicitudes():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=True)
-
