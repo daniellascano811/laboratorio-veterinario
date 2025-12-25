@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{{ title or "Solicitudes" }}</title>
+  <title>Solicitudes</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -27,41 +27,54 @@
 </header>
 
 <main class="container">
-  <h1>Solicitudes (últimas 50)</h1>
+  <div class="page-head">
+    <h1>Solicitudes (últimas 50)</h1>
+    <p class="muted">Vista interna (requiere login).</p>
+  </div>
 
   <div class="table-wrap">
-    <table>
+    <table class="table">
       <thead>
         <tr>
-          <th>ID</th>
-          <th>Zona</th>
-          <th>Dueño</th>
-          <th>Tel</th>
-          <th>Mascota</th>
-          <th>Muestra</th>
-          <th>¿Cuál?</th>
-          <th>Dirección</th>
-          <th>Fecha</th>
-          <th>Horario</th>
-          <th>Estado</th>
-          <th>Creado</th>
+          <th class="col-id">ID</th>
+          <th class="col-zona">Zona</th>
+          <th class="col-dueno">Dueño</th>
+          <th class="col-tel">Tel</th>
+          <th class="col-mascota">Mascota</th>
+          <th class="col-muestra">Muestra</th>
+          <th class="col-cual">¿Cuál?</th>
+          <th class="col-dir">Dirección</th>
+          <th class="col-fecha">Fecha</th>
+          <th class="col-hora">Horario</th>
+          <th class="col-estado">Estado</th>
+          <th class="col-creado">Creado</th>
         </tr>
       </thead>
+
       <tbody>
         {% for s in solicitudes %}
+        {% set estado = (s.estado or 'pendiente')|lower %}
         <tr>
-          <td>{{ s.id }}</td>
-          <td>{{ s.zona or '' }}</td>
-          <td>{{ s.dueno or '' }}</td>
-          <td>{{ s.tel or '' }}</td>
-          <td>{{ s.mascota or '' }}</td>
-          <td>{{ s.muestra or '' }}</td>
-          <td>{{ s.muestra_otro or '' }}</td>
-          <td>{{ s.direccion or '' }}</td>
-          <td>{{ s.fecha or '' }}</td>
-          <td>{{ s.horario or '' }}</td>
-          <td><span class="badge">{{ s.estado or 'pendiente' }}</span></td>
-          <td>{{ s.creado or '' }}</td>
+          <td class="mono">{{ s.id }}</td>
+          <td>{{ s.zona }}</td>
+          <td class="cell-wrap">{{ s.dueno }}</td>
+          <td class="mono">{{ s.tel }}</td>
+          <td class="cell-wrap">{{ s.mascota }}</td>
+          <td>{{ s.muestra }}</td>
+          <td class="cell-wrap">{{ s.cual }}</td>
+          <td class="cell-wrap">{{ s.direccion }}</td>
+          <td class="mono">{{ s.fecha }}</td>
+          <td class="cell-wrap">{{ s.horario }}</td>
+          <td>
+            <span class="badge
+              {% if 'pend' in estado %} badge-pendiente
+              {% elif 'proce' in estado or 'curso' in estado %} badge-proceso
+              {% elif 'comp' in estado or 'list' in estado %} badge-completado
+              {% else %} badge-pendiente {% endif %}">
+              {{ s.estado }}
+            </span>
+          </td>
+          <td class="mono">{{ s.creado }}</td>
         </tr>
         {% endfor %}
       </tbody>

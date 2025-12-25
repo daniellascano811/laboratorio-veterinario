@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{{ title or "Login" }}</title>
+  <title>Login</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -14,13 +14,12 @@
       <img src="{{ url_for('static', filename='img/logo-a3.png') }}" alt="Logo A3">
       <div class="brand-title">
         <strong>A3 Laboratorio Veterinario</strong>
-        <span>Solicitud de recogida de muestras</span>
+        <span>Acceso interno</span>
       </div>
     </div>
 
     <nav class="nav">
       <a class="nav-btn" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
     </nav>
   </div>
 </header>
@@ -28,21 +27,21 @@
 <main class="container">
   <h1>Login</h1>
 
-  <section class="card" style="max-width:520px;">
-    <form method="POST">
+  <section class="card card-narrow">
+    <form class="grid grid-login" method="POST" action="{{ url_for('login') }}">
       <label>Usuario
         <input name="usuario" required>
       </label>
 
-      <label>Clave
-        <input type="password" name="password" required>
+      <label>Contraseña
+        <input name="password" type="password" required>
       </label>
 
       {% if error %}
-        <p style="margin:10px 0 0 0; color:#b00020; font-weight:800;">{{ error }}</p>
+      <div class="alert">{{ error }}</div>
       {% endif %}
 
-      <button class="btn-primary" type="submit" style="margin-top:14px;">Entrar</button>
+      <button class="btn-primary" type="submit">Ingresar</button>
     </form>
   </section>
 </main>

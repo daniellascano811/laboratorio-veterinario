@@ -19,20 +19,20 @@
     </div>
 
     <nav class="nav">
-      <a class="nav-btn active" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn" href="{{ url_for('login') }}">Login</a>
     </nav>
   </div>
 </header>
 
 <main class="container">
-  <h1>✅ Solicitud enviada</h1>
   <section class="card">
-    <p style="margin:0; font-size:16px; font-weight:700;">
-      Gracias. Tu solicitud fue registrada correctamente.
-    </p>
-    <div style="margin-top:14px;">
+    <h2 class="ok-title">✅ Solicitud enviada</h2>
+    <p class="muted">Gracias. Tu solicitud fue registrada correctamente.</p>
+
+    <div class="actions">
       <a class="nav-btn active" href="{{ url_for('home') }}">Crear otra solicitud</a>
+      <a class="nav-btn" href="{{ url_for('login') }}">Ver solicitudes (login)</a>
     </div>
   </section>
 </main>

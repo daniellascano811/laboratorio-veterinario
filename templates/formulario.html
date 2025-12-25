@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{{ title or "Nueva solicitud" }}</title>
+  <title>Nueva solicitud</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -56,8 +56,8 @@
         </select>
       </label>
 
-      <label id="wrap-otro" class="hidden">¿Cuál?
-        <input name="muestra_otro" id="muestra_otro" placeholder="Describe la muestra">
+      <label>¿Cuál?
+        <input name="cual" id="cual" placeholder="Describe la muestra (si aplica)">
       </label>
 
       <label>Dirección
@@ -78,24 +78,23 @@
 </main>
 
 <script>
-  const sel = document.getElementById("muestra");
-  const wrapOtro = document.getElementById("wrap-otro");
-  const inpOtro = document.getElementById("muestra_otro");
+  // Si la muestra NO es "Otro", el campo "¿Cuál?" queda opcional y más suave
+  const muestra = document.getElementById("muestra");
+  const cual = document.getElementById("cual");
 
-  function toggleOtro(){
-    const v = sel.value;
-    if (v === "Otro") {
-      wrapOtro.classList.remove("hidden");
-      inpOtro.required = true;
+  function syncCual(){
+    const v = (muestra.value || "").toLowerCase();
+    if(v === "otro"){
+      cual.required = true;
+      cual.placeholder = "Describe la muestra (obligatorio)";
     } else {
-      wrapOtro.classList.add("hidden");
-      inpOtro.required = false;
-      inpOtro.value = "";
+      cual.required = false;
+      cual.placeholder = "Describe la muestra (si aplica)";
     }
   }
 
-  sel.addEventListener("change", toggleOtro);
-  toggleOtro();
+  muestra.addEventListener("change", syncCual);
+  syncCual();
 </script>
 
 </body>
