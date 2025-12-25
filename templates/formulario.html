@@ -30,28 +30,39 @@
 
   <section class="card">
     <form class="grid" method="POST" action="{{ url_for('crear_solicitud') }}">
+
       <label>Zona
-        <input name="zona" required>
+        <input name="zona" required placeholder="Ej: Norte">
       </label>
 
       <label>Dueño
-        <input name="dueno" required>
+        <input name="dueno" required placeholder="Nombre y apellido">
       </label>
 
       <label>Teléfono
-        <input name="tel" required>
+        <input name="tel" required inputmode="tel" placeholder="Ej: 3001234567">
       </label>
 
       <label>Mascota
-        <input name="mascota">
+        <input name="mascota" placeholder="Nombre de la mascota">
       </label>
 
       <label>Muestra
-        <input name="muestra">
+        <select name="muestra" id="muestra" required>
+          <option value="" selected disabled>Selecciona</option>
+          <option value="Orina">Orina</option>
+          <option value="Heces">Heces</option>
+          <option value="Sangre">Sangre</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </label>
+
+      <label id="muestra_otro_wrap" class="hidden">¿Cuál?
+        <input name="muestra_otro" id="muestra_otro" placeholder="Describe la muestra">
       </label>
 
       <label>Dirección
-        <input name="direccion">
+        <input name="direccion" placeholder="Ej: Calle 97 #70-89">
       </label>
 
       <label>Fecha
@@ -59,7 +70,7 @@
       </label>
 
       <label>Horario
-        <input name="horario">
+        <input name="horario" placeholder="Ej: Mañana (8:00 - 10:00)">
       </label>
 
       <button class="btn-primary" type="submit">Enviar solicitud</button>
@@ -67,6 +78,21 @@
   </section>
 </main>
 
+<script>
+  const muestra = document.getElementById("muestra");
+  const wrap = document.getElementById("muestra_otro_wrap");
+  const inputOtro = document.getElementById("muestra_otro");
+
+  function toggleOtro() {
+    const isOtro = muestra.value === "Otro";
+    wrap.classList.toggle("hidden", !isOtro);
+    inputOtro.required = isOtro;
+    if (!isOtro) inputOtro.value = "";
+  }
+
+  muestra.addEventListener("change", toggleOtro);
+  toggleOtro();
+</script>
+
 </body>
 </html>
-
