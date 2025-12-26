@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nueva solicitud</title>
+  <title>Nueva solicitud de muestra</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -19,17 +19,24 @@
     </div>
 
     <nav class="nav">
-      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+      <!-- 🔴 TEXTO CAMBIADO AQUÍ -->
+      <a class="nav-btn active" href="{{ url_for('home') }}">
+        Nueva solicitud de muestra
+      </a>
+      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">
+        Ver solicitudes
+      </a>
     </nav>
   </div>
 </header>
 
 <main class="container">
-  <h1>Nueva solicitud</h1>
+  <!-- 🔴 TEXTO CAMBIADO AQUÍ -->
+  <h1>Nueva solicitud de muestra</h1>
 
   <section class="card">
     <form class="grid" method="POST" action="{{ url_for('crear_solicitud') }}">
+
       <label>Zona
         <input name="zona" placeholder="Ej: Norte" required>
       </label>
@@ -47,17 +54,7 @@
       </label>
 
       <label>Muestra
-        <select name="muestra" id="muestra" required>
-          <option value="" selected disabled>Selecciona</option>
-          <option value="Orina">Orina</option>
-          <option value="Heces">Heces</option>
-          <option value="Sangre">Sangre</option>
-          <option value="Otro">Otro</option>
-        </select>
-      </label>
-
-      <label>¿Cuál?
-        <input name="cual" id="cual" placeholder="Describe la muestra (si aplica)">
+        <input name="muestra" placeholder="Ej: Orina, Sangre">
       </label>
 
       <label>Dirección
@@ -72,30 +69,13 @@
         <input name="horario" placeholder="Ej: Mañana (8:00 - 10:00)">
       </label>
 
-      <button class="btn-primary" type="submit">Enviar solicitud</button>
+      <button class="btn-primary" type="submit">
+        Enviar solicitud
+      </button>
+
     </form>
   </section>
 </main>
-
-<script>
-  // Si la muestra NO es "Otro", el campo "¿Cuál?" queda opcional y más suave
-  const muestra = document.getElementById("muestra");
-  const cual = document.getElementById("cual");
-
-  function syncCual(){
-    const v = (muestra.value || "").toLowerCase();
-    if(v === "otro"){
-      cual.required = true;
-      cual.placeholder = "Describe la muestra (obligatorio)";
-    } else {
-      cual.required = false;
-      cual.placeholder = "Describe la muestra (si aplica)";
-    }
-  }
-
-  muestra.addEventListener("change", syncCual);
-  syncCual();
-</script>
 
 </body>
 </html>
