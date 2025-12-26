@@ -1,148 +1,41 @@
-import os
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+{% extends "base.html" %}
+{% block title %}Formulario{% endblock %}
 
-app = Flask(__name__)
-app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
+{% block content %}
+<h2>Nueva Solicitud</h2>
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+<form method="POST" action="{{ url_for('crear_solicitud') }}">
+  <div style="margin-bottom:12px;">
+    <label>Nombre</label>
+    <input name="nombre" required>
+  </div>
 
-# =========================
-# DB
-# =========================
-def get_db():
-    return psycopg2.connect(
-        DATABASE_URL,
-        cursor_factory=RealDictCursor,
-        sslmode="require"
-    )
+  <div style="margin-bottom:12px;">
+    <label>Teléfono</label>
+    <input name="telefono">
+  </div>
 
-def init_db():
-    conn = get_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS usuarios (
-                    id SERIAL PRIMARY KEY,
-                    username TEXT UNIQUE NOT NULL,
-                    password TEXT NOT NULL
-                );
-            """)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS solicitudes (
-                    id SERIAL PRIMARY KEY,
-                    nombre TEXT NOT NULL,
-                    telefono TEXT,
-                    email TEXT,
-                    tipo_muestra TEXT,
-                    observaciones TEXT,
-                    created_at TIMESTAMP DEFAULT NOW()
-                );
-            """)
-            cur.execute("SELECT 1 FROM usuarios WHERE username='admin'")
-            if not cur.fetchone():
-                cur.execute(
-                    "INSERT INTO usuarios (username, password) VALUES ('admin','admin123')"
-                )
-    conn.close()
+  <div style="margin-bottom:12px;">
+    <label>Email</label>
+    <input name="email" type="email">
+  </div>
 
-# ⚠️ CLAVE: NO inicializar DB al arrancar
-_db_ready = False
-def ensure_db():
-    global _db_ready
-    if not _db_ready:
-        init_db()
-        _db_ready = True
+  <div style="margin-bottom:12px;">
+    <label>Tipo de muestra</label>
+    <select name="tipo_muestra">
+      <option value="">Selecciona...</option>
+      <option>Sangre</option>
+      <option>Orina</option>
+      <option>Heces</option>
+      <option>Otro</option>
+    </select>
+  </div>
 
-# =========================
-# AUTH
-# =========================
-def login_required(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if not session.get("user"):
-            return redirect(url_for("login"))
-        return f(*args, **kwargs)
-    return wrapper
+  <div style="margin-bottom:12px;">
+    <label>Observaciones</label>
+    <textarea name="observaciones" rows="4"></textarea>
+  </div>
 
-# =========================
-# ROUTES
-# =========================
-@app.get("/")
-def home():
-    return redirect(url_for("login"))
-
-@app.get("/login")
-def login():
-    return render_template("login.html")
-
-@app.post("/login")
-def iniciar_sesion():
-    ensure_db()
-    user = request.form.get("username")
-    pwd = request.form.get("password")
-
-    conn = get_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, username FROM usuarios WHERE username=%s AND password=%s",
-                (user, pwd)
-            )
-            u = cur.fetchone()
-    conn.close()
-
-    if not u:
-        flash("Credenciales incorrectas")
-        return redirect(url_for("login"))
-
-    session["user"] = u["username"]
-    return redirect(url_for("formulario"))
-
-@app.get("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-@app.get("/formulario")
-@login_required
-def formulario():
-    return render_template("formulario.html")
-
-@app.post("/formulario")
-@login_required
-def crear_solicitud():
-    ensure_db()
-
-    conn = get_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("""
-                INSERT INTO solicitudes (nombre, telefono, email, tipo_muestra, observaciones)
-                VALUES (%s,%s,%s,%s,%s)
-            """, (
-                request.form["nombre"],
-                request.form.get("telefono"),
-                request.form.get("email"),
-                request.form.get("tipo_muestra"),
-                request.form.get("observaciones"),
-            ))
-    conn.close()
-
-    return redirect(url_for("solicitudes"))
-
-@app.get("/solicitudes")
-@login_required
-def solicitudes():
-    ensure_db()
-
-    conn = get_db()
-    with conn:
-        with conn.cursor() as cur:
-            cur.execute("SELECT * FROM solicitudes ORDER BY created_at DESC")
-            rows = cur.fetchall()
-    conn.close()
-
-    return render_template("solicitudes.html", solicitudes=rows)
+  <button type="submit">Guardar</button>
+</form>
+{% endblock %}

@@ -4,87 +4,37 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Laboratorio{% endblock %}</title>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0b1220;
-      color: #e8eefc;
-      margin: 0;
-    }
-    header {
-      background: #111b33;
-      padding: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    a {
-      color: #9bd1ff;
-      text-decoration: none;
-      margin-left: 12px;
-    }
-    .container {
-      max-width: 900px;
-      margin: 20px auto;
-      padding: 0 16px;
-    }
-    .card {
-      background: #111b33;
-      border-radius: 12px;
-      padding: 20px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      margin-top: 4px;
-    }
-    button {
-      padding: 10px 16px;
-      border-radius: 8px;
-      border: none;
-      background: #2a73ff;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover {
-      opacity: 0.9;
-    }
-  </style>
 </head>
+<body style="font-family:Arial; background:#0b1220; color:#e8eefc; margin:0;">
 
-<body>
+  <div style="background:#111b33; padding:14px 16px; display:flex; justify-content:space-between; align-items:center;">
+    <strong>Laboratorio</strong>
+    <div>
+      {% if session.get("user") %}
+        <a style="color:#9bd1ff; margin-left:12px;" href="{{ url_for('formulario') }}">Formulario</a>
+        <a style="color:#9bd1ff; margin-left:12px;" href="{{ url_for('solicitudes') }}">Solicitudes</a>
+        <a style="color:#9bd1ff; margin-left:12px;" href="{{ url_for('logout') }}">Salir</a>
+      {% else %}
+        <a style="color:#9bd1ff; margin-left:12px;" href="{{ url_for('login') }}">Login</a>
+      {% endif %}
+    </div>
+  </div>
 
-<header>
-  <strong>Laboratorio</strong>
+  <div style="max-width:900px; margin:20px auto; padding:0 16px;">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for m in messages %}
+          <div style="background:rgba(42,115,255,.15); border:1px solid rgba(42,115,255,.35); padding:10px 12px; border-radius:10px; margin-bottom:12px;">
+            {{ m }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
 
-  <nav>
-    {% if session.get("user") %}
-      <a href="{{ url_for('formulario') }}">Formulario</a>
-      <a href="{{ url_for('solicitudes') }}">Solicitudes</a>
-      <a href="{{ url_for('logout') }}">Salir</a>
-    {% else %}
-      <!-- LINK A LOGIN: SIEMPRE login (GET) -->
-      <a href="{{ url_for('login') }}">Login</a>
-    {% endif %}
-  </nav>
-</header>
-
-<div class="container">
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      {% for m in messages %}
-        <div class="card" style="margin-bottom:12px;">
-          {{ m }}
-        </div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-
-  {% block content %}{% endblock %}
-</div>
+    <div style="background:#111b33; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:18px;">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
 
 </body>
 </html>
