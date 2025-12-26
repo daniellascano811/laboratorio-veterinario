@@ -19,176 +19,61 @@
     </div>
 
     <nav class="nav">
-      <a class="nav-btn active" href="{{ url_for('home') }}">
-        Nueva solicitud
-      </a>
-      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">
-        Ver solicitudes
-      </a>
+      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
+      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+      {% if session.get('logged_in') %}
+        <a class="nav-btn" href="{{ url_for('logout') }}">Logout</a>
+      {% endif %}
     </nav>
   </div>
 </header>
 
 <main class="container">
-  <!-- JERARQUÍA CLARA -->
-  <h1>Nueva solicitud de muestra</h1>
-  <p class="subtitle">
-    Completa los datos del dueño y de la mascota para coordinar la recogida
-  </p>
+  <h1 class="page-title">
+    <span class="title-icon" aria-hidden="true">💉</span>
+    Nueva solicitud de muestra
+  </h1>
+  <p class="subtitle">Completa los datos del dueño y de la mascota para coordinar la recogida</p>
 
   <section class="card">
-    <form class="grid grid-vertical" method="POST" action="{{ url_for('crear_solicitud') }}">
+    <form class="grid" method="POST" action="{{ url_for('crear_solicitud') }}">
 
-      <!-- ================== DATOS DEL DUEÑO ================== -->
-      <div class="section-title">Datos del dueño</div>
+      <label>Zona
+        <input name="zona" placeholder="Ej: Norte" required>
+      </label>
 
-      <label>Nombre del dueño
-        <input name="dueno_nombre" placeholder="Nombre y apellido" required>
+      <label>Dueño
+        <input name="dueno" placeholder="Nombre y apellido" required>
       </label>
 
       <label>Teléfono
-        <input name="dueno_telefono" placeholder="Ej: 3001234567" required>
+        <input name="tel" placeholder="Ej: 3001234567" required>
       </label>
 
-      <label>Tipo de vivienda
-        <select name="vivienda_tipo" required>
-          <option value="" selected disabled>Selecciona</option>
-          <option value="casa">Casa</option>
-          <option value="apartamento">Apartamento</option>
-        </select>
+      <label>Mascota
+        <input name="mascota" placeholder="Nombre de la mascota">
+      </label>
+
+      <label>Muestra
+        <input name="muestra" placeholder="Ej: Orina / Heces / Sangre">
       </label>
 
       <label>Dirección
-        <input name="direccion" placeholder="Calle / Carrera / Número" required>
+        <input name="direccion" placeholder="Ej: Calle 97 #70-89">
       </label>
 
-      <div class="row-2">
-        <label>Torre (si aplica)
-          <input name="torre" placeholder="Ej: Torre 3">
-        </label>
-
-        <label>Apartamento (si aplica)
-          <input name="apto" placeholder="Ej: 1204">
-        </label>
-      </div>
-
-      <label>Instrucciones adicionales
-        <input name="direccion_detalle" placeholder="Portería, código, referencias…">
-      </label>
-
-      <div class="row-2">
-        <label>Turno
-          <select name="horario_turno" required>
-            <option value="" selected disabled>Selecciona</option>
-            <option value="mañana">Mañana</option>
-            <option value="tarde">Tarde</option>
-          </select>
-        </label>
-
-        <label>Rango horario
-          <select name="horario_rango" required>
-            <option value="" selected disabled>Selecciona</option>
-            <option value="9:00 - 12:00">9:00 – 12:00</option>
-            <option value="13:00 - 17:00">13:00 – 17:00</option>
-          </select>
-        </label>
-      </div>
-
-      <label>Fecha de recogida (opcional)
+      <label>Fecha
         <input type="date" name="fecha">
       </label>
 
-      <!-- ================== DATOS DE LA MASCOTA ================== -->
-      <div class="section-title">Datos de la mascota</div>
-
-      <label>Nombre de la mascota
-        <input name="mascota_nombre" required>
+      <label>Horario
+        <input name="horario" placeholder="Ej: Mañana (8:00 - 10:00)">
       </label>
 
-      <label>Especie
-        <select name="mascota_especie" id="mascota_especie" required>
-          <option value="" selected disabled>Selecciona</option>
-          <option value="perro">🐶 Perro</option>
-          <option value="gato">🐱 Gato</option>
-          <option value="otro">🐾 Otro</option>
-        </select>
-      </label>
-
-      <label id="mascota_otro_wrap" class="hidden">¿Cuál?
-        <input name="mascota_otro" id="mascota_otro" placeholder="Especifica la mascota">
-      </label>
-
-      <label>Raza
-        <input name="mascota_raza" placeholder="Ej: Criollo, Bulldog…">
-      </label>
-
-      <label>Edad
-        <input name="mascota_edad" placeholder="Ej: 2 años / 6 meses">
-      </label>
-
-      <!-- ================== MUESTRA ================== -->
-      <div class="section-title">Muestra</div>
-
-      <label>Tipo de muestra
-        <select name="muestra_tipo" id="muestra_tipo" required>
-          <option value="" selected disabled>Selecciona</option>
-          <option value="sangre">Sangre</option>
-          <option value="heces">Heces</option>
-          <option value="orina">Orina</option>
-          <option value="otro">Otro</option>
-        </select>
-      </label>
-
-      <label id="muestra_otro_wrap" class="hidden">¿Cuál?
-        <input name="muestra_otro" id="muestra_otro" placeholder="Describe la muestra">
-      </label>
-
-      <label>Condición especial
-        <input name="muestra_condicion" placeholder="Refrigerada, hielo, tiempo máximo…">
-      </label>
-
-      <button class="btn-primary" type="submit">
-        Enviar solicitud
-      </button>
+      <button class="btn-primary" type="submit">Enviar solicitud</button>
     </form>
   </section>
 </main>
-
-<script>
-  const especie = document.getElementById("mascota_especie");
-  const mascotaOtroWrap = document.getElementById("mascota_otro_wrap");
-  const mascotaOtro = document.getElementById("mascota_otro");
-
-  function toggleMascotaOtro(){
-    if (especie.value === "otro") {
-      mascotaOtroWrap.classList.remove("hidden");
-      mascotaOtro.required = true;
-    } else {
-      mascotaOtroWrap.classList.add("hidden");
-      mascotaOtro.required = false;
-      mascotaOtro.value = "";
-    }
-  }
-  especie.addEventListener("change", toggleMascotaOtro);
-  toggleMascotaOtro();
-
-  const muestra = document.getElementById("muestra_tipo");
-  const muestraOtroWrap = document.getElementById("muestra_otro_wrap");
-  const muestraOtro = document.getElementById("muestra_otro");
-
-  function toggleMuestraOtro(){
-    if (muestra.value === "otro") {
-      muestraOtroWrap.classList.remove("hidden");
-      muestraOtro.required = true;
-    } else {
-      muestraOtroWrap.classList.add("hidden");
-      muestraOtro.required = false;
-      muestraOtro.value = "";
-    }
-  }
-  muestra.addEventListener("change", toggleMuestraOtro);
-  toggleMuestraOtro();
-</script>
 
 </body>
 </html>
