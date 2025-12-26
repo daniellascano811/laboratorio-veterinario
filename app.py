@@ -1,7 +1,6 @@
 import os
 import sqlite3
 from functools import wraps
-from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
 
 import psycopg
 from psycopg.rows import dict_row
@@ -17,16 +16,13 @@ from flask import (
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-# Render (Postgres)
-DATABASE_URL = (os.environ.get("DATABASE_URL") or "").strip()
+DATABASE_URL = os.environ.get("DATABASE_URL")  # Render (Postgres)
+SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")  # Local
 
-# Local (SQLite)
-SQLITE_PATH = os.environ.get("SQLITE_PATH", "app_local.db")
-
-# Admin (opcional por env vars)
+# Admin seed (opcional)
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "1234")
-FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "1").strip()  # "1" o "0"
+FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "1")  # "1" para asegurar admin
 
 
 # =========================
@@ -36,37 +32,16 @@ def using_postgres() -> bool:
     return bool(DATABASE_URL)
 
 
-def normalize_pg_url(raw_url: str) -> str:
+def normalize_dsn(dsn: str) -> str:
     """
-    Acepta un DATABASE_URL tipo:
-      postgresql://user:pass@host:5432/dbname
-    y garantiza:
-      - sin espacios / saltos raros
-      - sslmode=require como query param correcto
+    Render ya suele traer un DSN correcto. No inventamos sslmode aquí.
+    Si tu DATABASE_URL ya trae ?sslmode=require, perfecto.
     """
-    u = (raw_url or "").strip()
-
-    # Si el usuario pegó con saltos de línea, los quitamos
-    u = " ".join(u.split())
-
-    # Si el usuario pegó algo tipo: ".../db sslmode=require" (MAL),
-    # lo arreglamos separando por espacio:
-    if " sslmode=" in u and "?" not in u:
-        # toma la parte antes del espacio, ignora lo demás
-        u = u.split(" ")[0].strip()
-
-    parsed = urlparse(u)
-    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
-
-    # Forzamos sslmode=require bien
-    query["sslmode"] = "require"
-
-    new_parsed = parsed._replace(query=urlencode(query))
-    return urlunparse(new_parsed)
+    return dsn
 
 
 def get_pg_conn():
-    dsn = normalize_pg_url(DATABASE_URL)
+    dsn = normalize_dsn(DATABASE_URL)
     return psycopg.connect(dsn, row_factory=dict_row)
 
 
@@ -77,7 +52,7 @@ def get_sqlite_conn():
 
 
 def get_db():
-    # Retorna (conn, engine)
+    # Retorna (conn, "pg"|"sqlite")
     if using_postgres():
         return get_pg_conn(), "pg"
     return get_sqlite_conn(), "sqlite"
@@ -98,16 +73,39 @@ def fetchall_list(rows, engine):
 
 
 def sql_placeholder(engine):
+    # Postgres usa %s, sqlite usa ?
     return "%s" if engine == "pg" else "?"
 
 
 # =========================
-# INIT DB
+# MIGRATIONS / INIT DB
 # =========================
+def pg_add_column_if_missing(cur, table: str, col: str, coltype: str):
+    cur.execute(
+        """
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = %s AND column_name = %s
+        """,
+        (table, col)
+    )
+    exists = cur.fetchone()
+    if not exists:
+        cur.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" {coltype};')
+
+
+def sqlite_add_column_if_missing(cur, table: str, col: str, coltype: str):
+    cur.execute(f"PRAGMA table_info({table});")
+    cols = [r[1] for r in cur.fetchall()]  # (cid, name, type, notnull, dflt_value, pk)
+    if col not in cols:
+        cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} {coltype};")
+
+
 def init_db():
     conn, engine = get_db()
     cur = conn.cursor()
 
+    # --- tablas base ---
     if engine == "pg":
         cur.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
@@ -117,28 +115,70 @@ def init_db():
             password TEXT NOT NULL
         );
         """)
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS solicitudes (
             id SERIAL PRIMARY KEY,
+
+            -- LEGACY (para no romper nada viejo)
             zona TEXT,
             dueno TEXT,
             tel TEXT,
             mascota TEXT,
             muestra TEXT,
-            muestra_cual TEXT,
             direccion TEXT,
             fecha DATE NULL,
             horario TEXT,
+
+            -- NUEVO (estructura real)
+            dueno_nombre TEXT,
+            dueno_telefono TEXT,
+            vivienda_tipo TEXT,      -- casa/apto
+            torre TEXT,
+            apto TEXT,
+            direccion_detalle TEXT,  -- interior / instrucciones
+
+            horario_turno TEXT,      -- mañana/tarde
+            horario_rango TEXT,      -- 9-12 / 1-5 etc
+
+            mascota_nombre TEXT,
+            mascota_especie TEXT,    -- perro/gato/otro
+            mascota_otro TEXT,
+            mascota_raza TEXT,
+            mascota_edad TEXT,
+
+            muestra_tipo TEXT,       -- sangre/heces/orina/otro
+            muestra_otro TEXT,
+            muestra_condicion TEXT,  -- refrigerada/urgente/etc
+
             estado TEXT DEFAULT 'pendiente',
             creado TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """)
-        # migración segura si la columna no existía antes
-        try:
-            cur.execute("ALTER TABLE solicitudes ADD COLUMN IF NOT EXISTS muestra_cual TEXT;")
-        except Exception:
-            pass
+
+        # Asegurar columnas nuevas si la tabla ya existía
+        pg_add_column_if_missing(cur, "solicitudes", "dueno_nombre", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "dueno_telefono", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "vivienda_tipo", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "torre", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "apto", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "direccion_detalle", "TEXT")
+
+        pg_add_column_if_missing(cur, "solicitudes", "horario_turno", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "horario_rango", "TEXT")
+
+        pg_add_column_if_missing(cur, "solicitudes", "mascota_nombre", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "mascota_especie", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "mascota_otro", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "mascota_raza", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "mascota_edad", "TEXT")
+
+        pg_add_column_if_missing(cur, "solicitudes", "muestra_tipo", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "muestra_otro", "TEXT")
+        pg_add_column_if_missing(cur, "solicitudes", "muestra_condicion", "TEXT")
+
     else:
+        # SQLite
         cur.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,35 +187,77 @@ def init_db():
             password TEXT NOT NULL
         );
         """)
+
         cur.execute("""
         CREATE TABLE IF NOT EXISTS solicitudes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+
             zona TEXT,
             dueno TEXT,
             tel TEXT,
             mascota TEXT,
             muestra TEXT,
-            muestra_cual TEXT,
             direccion TEXT,
             fecha TEXT NULL,
             horario TEXT,
+
+            dueno_nombre TEXT,
+            dueno_telefono TEXT,
+            vivienda_tipo TEXT,
+            torre TEXT,
+            apto TEXT,
+            direccion_detalle TEXT,
+
+            horario_turno TEXT,
+            horario_rango TEXT,
+
+            mascota_nombre TEXT,
+            mascota_especie TEXT,
+            mascota_otro TEXT,
+            mascota_raza TEXT,
+            mascota_edad TEXT,
+
+            muestra_tipo TEXT,
+            muestra_otro TEXT,
+            muestra_condicion TEXT,
+
             estado TEXT DEFAULT 'pendiente',
             creado DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         """)
 
-    ph = sql_placeholder(engine)
+        sqlite_add_column_if_missing(cur, "solicitudes", "dueno_nombre", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "dueno_telefono", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "vivienda_tipo", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "torre", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "apto", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "direccion_detalle", "TEXT")
 
-    # Admin sync
-    if FORCE_ADMIN_SYNC == "1":
-        cur.execute(f"SELECT * FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
-        row = cur.fetchone()
-        if row is None:
-            cur.execute(
-                f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
-                (ADMIN_USER, "Administrador", ADMIN_PASSWORD)
-            )
-        else:
+        sqlite_add_column_if_missing(cur, "solicitudes", "horario_turno", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "horario_rango", "TEXT")
+
+        sqlite_add_column_if_missing(cur, "solicitudes", "mascota_nombre", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "mascota_especie", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "mascota_otro", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "mascota_raza", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "mascota_edad", "TEXT")
+
+        sqlite_add_column_if_missing(cur, "solicitudes", "muestra_tipo", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "muestra_otro", "TEXT")
+        sqlite_add_column_if_missing(cur, "solicitudes", "muestra_condicion", "TEXT")
+
+    # --- seed admin ---
+    ph = sql_placeholder(engine)
+    cur.execute(f"SELECT 1 FROM usuarios WHERE usuario={ph}", (ADMIN_USER,))
+    exists = cur.fetchone()
+
+    if exists is None:
+        cur.execute(
+            f"INSERT INTO usuarios (usuario, nombre, password) VALUES ({ph},{ph},{ph})",
+            (ADMIN_USER, "Administrador", ADMIN_PASSWORD)
+        )
+    else:
+        if FORCE_ADMIN_SYNC == "1":
             cur.execute(
                 f"UPDATE usuarios SET password={ph} WHERE usuario={ph}",
                 (ADMIN_PASSWORD, ADMIN_USER)
@@ -187,6 +269,7 @@ def init_db():
     print(f"DB inicializada OK ({'Postgres' if engine=='pg' else 'SQLite'})")
 
 
+# Inicializa DB al arrancar
 try:
     init_db()
 except Exception as e:
@@ -210,23 +293,48 @@ def login_required(view):
 # =========================
 @app.route("/")
 def home():
-    return render_template("formulario.html", title="Nueva solicitud", active="form")
+    return render_template("formulario.html", title="Nueva solicitud de muestra", active="form")
 
 
 @app.route("/solicitud", methods=["POST"])
 def crear_solicitud():
-    zona = request.form.get("zona")
-    dueno = request.form.get("dueno")
-    tel = request.form.get("tel")
-    mascota = request.form.get("mascota")
-    muestra = request.form.get("muestra")
-    muestra_cual = request.form.get("muestra_cual")
-    direccion = request.form.get("direccion")
+    # ----- DUEÑO -----
+    dueno_nombre = (request.form.get("dueno_nombre") or "").strip()
+    dueno_telefono = (request.form.get("dueno_telefono") or "").strip()
 
+    vivienda_tipo = (request.form.get("vivienda_tipo") or "").strip()  # casa/apto
+    direccion = (request.form.get("direccion") or "").strip()
+    torre = (request.form.get("torre") or "").strip()
+    apto = (request.form.get("apto") or "").strip()
+    direccion_detalle = (request.form.get("direccion_detalle") or "").strip()
+
+    # horario
+    horario_turno = (request.form.get("horario_turno") or "").strip()  # mañana/tarde
+    horario_rango = (request.form.get("horario_rango") or "").strip()  # 9-12 / 1-5
+
+    # fecha opcional
     fecha_str = (request.form.get("fecha") or "").strip()
     fecha = fecha_str if fecha_str else None
 
-    horario = (request.form.get("horario") or "").strip() or None
+    # ----- MASCOTA -----
+    mascota_nombre = (request.form.get("mascota_nombre") or "").strip()
+    mascota_especie = (request.form.get("mascota_especie") or "").strip()  # perro/gato/otro
+    mascota_otro = (request.form.get("mascota_otro") or "").strip()
+    mascota_raza = (request.form.get("mascota_raza") or "").strip()
+    mascota_edad = (request.form.get("mascota_edad") or "").strip()
+
+    # ----- MUESTRA -----
+    muestra_tipo = (request.form.get("muestra_tipo") or "").strip()  # sangre/heces/orina/otro
+    muestra_otro = (request.form.get("muestra_otro") or "").strip()
+    muestra_condicion = (request.form.get("muestra_condicion") or "").strip()
+
+    # Guardamos también una versión "legacy" por si tu tabla vieja tenía datos:
+    # dueno/tel/mascota/muestra/horario ya existían.
+    dueno_legacy = dueno_nombre
+    tel_legacy = dueno_telefono
+    mascota_legacy = mascota_nombre
+    muestra_legacy = muestra_tipo if muestra_tipo != "otro" else (muestra_otro or "otro")
+    horario_legacy = f"{horario_turno} ({horario_rango})".strip()
 
     conn, engine = get_db()
     cur = conn.cursor()
@@ -235,10 +343,32 @@ def crear_solicitud():
     cur.execute(
         f"""
         INSERT INTO solicitudes
-        (zona, dueno, tel, mascota, muestra, muestra_cual, direccion, fecha, horario)
-        VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})
+        (
+          -- legacy
+          dueno, tel, mascota, muestra, direccion, fecha, horario,
+
+          -- nuevo
+          dueno_nombre, dueno_telefono, vivienda_tipo, torre, apto, direccion_detalle,
+          horario_turno, horario_rango,
+          mascota_nombre, mascota_especie, mascota_otro, mascota_raza, mascota_edad,
+          muestra_tipo, muestra_otro, muestra_condicion
+        )
+        VALUES
+        (
+          {ph},{ph},{ph},{ph},{ph},{ph},{ph},
+          {ph},{ph},{ph},{ph},{ph},{ph},
+          {ph},{ph},
+          {ph},{ph},{ph},{ph},{ph},
+          {ph},{ph},{ph}
+        )
         """,
-        (zona, dueno, tel, mascota, muestra, muestra_cual, direccion, fecha, horario)
+        (
+            dueno_legacy, tel_legacy, mascota_legacy, muestra_legacy, direccion, fecha, horario_legacy,
+            dueno_nombre, dueno_telefono, vivienda_tipo, torre, apto, direccion_detalle,
+            horario_turno, horario_rango,
+            mascota_nombre, mascota_especie, mascota_otro, mascota_raza, mascota_edad,
+            muestra_tipo, muestra_otro, muestra_condicion
+        )
     )
 
     conn.commit()
@@ -292,8 +422,15 @@ def ver_solicitudes():
     conn, engine = get_db()
     cur = conn.cursor()
 
+    # Traemos las últimas 50 con los campos nuevos
     cur.execute("""
-        SELECT *
+        SELECT
+          id,
+          dueno_nombre, dueno_telefono, vivienda_tipo, direccion, torre, apto, direccion_detalle,
+          horario_turno, horario_rango, fecha,
+          mascota_nombre, mascota_especie, mascota_otro, mascota_raza, mascota_edad,
+          muestra_tipo, muestra_otro, muestra_condicion,
+          estado, creado
         FROM solicitudes
         ORDER BY creado DESC
         LIMIT 50
@@ -313,4 +450,5 @@ def ver_solicitudes():
 # =========================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Local ok con 127.0.0.1, Render usa gunicorn (no entra aquí)
+    app.run(host="127.0.0.1", port=port, debug=True)

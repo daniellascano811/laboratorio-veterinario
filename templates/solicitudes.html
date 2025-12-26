@@ -27,54 +27,78 @@
 </header>
 
 <main class="container">
-  <div class="page-head">
-    <h1>Solicitudes (últimas 50)</h1>
-    <p class="muted">Vista interna (requiere login).</p>
-  </div>
+  <h1>Solicitudes (últimas 50)</h1>
 
   <div class="table-wrap">
-    <table class="table">
+    <table>
       <thead>
         <tr>
-          <th class="col-id">ID</th>
-          <th class="col-zona">Zona</th>
-          <th class="col-dueno">Dueño</th>
-          <th class="col-tel">Tel</th>
-          <th class="col-mascota">Mascota</th>
-          <th class="col-muestra">Muestra</th>
-          <th class="col-cual">¿Cuál?</th>
-          <th class="col-dir">Dirección</th>
-          <th class="col-fecha">Fecha</th>
-          <th class="col-hora">Horario</th>
-          <th class="col-estado">Estado</th>
-          <th class="col-creado">Creado</th>
+          <th>ID</th>
+          <th>Dueño</th>
+          <th>Tel</th>
+          <th>Dirección</th>
+          <th>Vivienda</th>
+          <th>Horario</th>
+          <th>Fecha</th>
+
+          <th>Mascota</th>
+          <th>Especie</th>
+          <th>Raza</th>
+          <th>Edad</th>
+
+          <th>Muestra</th>
+          <th>¿Cuál?</th>
+          <th>Condición</th>
+
+          <th>Estado</th>
+          <th>Creado</th>
         </tr>
       </thead>
-
       <tbody>
         {% for s in solicitudes %}
-        {% set estado = (s.estado or 'pendiente')|lower %}
         <tr>
-          <td class="mono">{{ s.id }}</td>
-          <td>{{ s.zona }}</td>
-          <td class="cell-wrap">{{ s.dueno }}</td>
-          <td class="mono">{{ s.tel }}</td>
-          <td class="cell-wrap">{{ s.mascota }}</td>
-          <td>{{ s.muestra }}</td>
-          <td class="cell-wrap">{{ s.cual }}</td>
-          <td class="cell-wrap">{{ s.direccion }}</td>
-          <td class="mono">{{ s.fecha }}</td>
-          <td class="cell-wrap">{{ s.horario }}</td>
+          <td>{{ s.id }}</td>
+
+          <td>{{ s.dueno_nombre }}</td>
+          <td>{{ s.dueno_telefono }}</td>
+
           <td>
-            <span class="badge
-              {% if 'pend' in estado %} badge-pendiente
-              {% elif 'proce' in estado or 'curso' in estado %} badge-proceso
-              {% elif 'comp' in estado or 'list' in estado %} badge-completado
-              {% else %} badge-pendiente {% endif %}">
-              {{ s.estado }}
-            </span>
+            {{ s.direccion }}
+            {% if s.torre or s.apto %}
+              <br><small class="muted">Torre: {{ s.torre or '-' }} | Apto: {{ s.apto or '-' }}</small>
+            {% endif %}
+            {% if s.direccion_detalle %}
+              <br><small class="muted">{{ s.direccion_detalle }}</small>
+            {% endif %}
           </td>
-          <td class="mono">{{ s.creado }}</td>
+
+          <td>{{ s.vivienda_tipo }}</td>
+
+          <td>{{ s.horario_turno }} ({{ s.horario_rango }})</td>
+          <td>{{ s.fecha }}</td>
+
+          <td>{{ s.mascota_nombre }}</td>
+          <td>
+            {{ s.mascota_especie }}
+            {% if s.mascota_especie == 'otro' and s.mascota_otro %}
+              <br><small class="muted">{{ s.mascota_otro }}</small>
+            {% endif %}
+          </td>
+          <td>{{ s.mascota_raza }}</td>
+          <td>{{ s.mascota_edad }}</td>
+
+          <td>{{ s.muestra_tipo }}</td>
+          <td>
+            {% if s.muestra_tipo == 'otro' %}
+              {{ s.muestra_otro }}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+          <td>{{ s.muestra_condicion }}</td>
+
+          <td><span class="badge">{{ s.estado }}</span></td>
+          <td>{{ s.creado }}</td>
         </tr>
         {% endfor %}
       </tbody>
