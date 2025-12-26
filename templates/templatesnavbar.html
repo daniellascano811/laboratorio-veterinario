@@ -1,30 +1,51 @@
-{# templates/navbar.html #}
-{% set ap = active_page|default('') %}
-
-<header class="navbar">
-  <div class="logo">
-    <div class="logo-badge">A3</div>
-    <div class="logo-text">
-      <strong>A3 Laboratorio Veterinario</strong>
-      <span>Solicitud de recogida de muestras</span>
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Laboratorio{% endblock %}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; background: #0b1220; color: #e8eefc; }
+    header { padding: 14px 18px; background: #111b33; display:flex; justify-content:space-between; align-items:center; }
+    a { color: #9bd1ff; text-decoration:none; }
+    .container { max-width: 920px; margin: 18px auto; padding: 0 14px; }
+    .card { background:#111b33; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px; }
+    .row { display:flex; gap:12px; flex-wrap:wrap; }
+    input, textarea, select { width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:#0b1220; color:#e8eefc; }
+    label { font-size: 14px; opacity:.9; }
+    button { padding:10px 14px; border-radius:10px; border:0; background:#2a73ff; color:white; cursor:pointer; }
+    button:hover { opacity:.9; }
+    .nav a { margin-left: 12px; }
+    .flash { margin-bottom: 12px; padding:10px; border-radius:10px; background:rgba(42,115,255,.15); border:1px solid rgba(42,115,255,.35); }
+    table { width:100%; border-collapse:collapse; }
+    th, td { text-align:left; padding:10px; border-bottom:1px solid rgba(255,255,255,.08); font-size:14px; vertical-align:top; }
+    th { opacity:.85; }
+  </style>
+</head>
+<body>
+  <header>
+    <div><strong>Laboratorio</strong></div>
+    <div class="nav">
+      {% if session.get("user") %}
+        <a href="{{ url_for('formulario') }}">Nueva Solicitud</a>
+        <a href="{{ url_for('solicitudes') }}">Solicitudes</a>
+        <a href="{{ url_for('logout') }}">Salir</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">Login</a>
+      {% endif %}
     </div>
+  </header>
+
+  <div class="container">
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for m in messages %}
+          <div class="flash">{{ m }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
   </div>
-
-  <nav class="nav-buttons">
-    <a href="{{ url_for('home') }}"
-       class="nav-btn {{ 'active' if ap=='form' else '' }}">
-      Nueva solicitud
-    </a>
-
-    <a href="{{ url_for('ver_solicitudes') }}"
-       class="nav-btn {{ 'active' if ap=='solicitudes' else '' }}">
-      Ver solicitudes
-    </a>
-
-    {% if session.get("logged_in") %}
-      <a href="{{ url_for('logout') }}" class="nav-btn">
-        Logout
-      </a>
-    {% endif %}
-  </nav>
-</header>
+</body>
+</html>
