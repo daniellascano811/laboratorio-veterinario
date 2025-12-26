@@ -19,18 +19,27 @@
     </div>
 
     <nav class="nav">
-      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
+      <a class="nav-btn active" href="{{ url_for('home') }}">
+        Nueva solicitud
+      </a>
+      <a class="nav-btn" href="{{ url_for('ver_solicitudes') }}">
+        Ver solicitudes
+      </a>
     </nav>
   </div>
 </header>
 
 <main class="container">
+  <!-- JERARQUÍA CLARA -->
   <h1>Nueva solicitud de muestra</h1>
+  <p class="subtitle">
+    Completa los datos del dueño y de la mascota para coordinar la recogida
+  </p>
 
   <section class="card">
     <form class="grid grid-vertical" method="POST" action="{{ url_for('crear_solicitud') }}">
 
+      <!-- ================== DATOS DEL DUEÑO ================== -->
       <div class="section-title">Datos del dueño</div>
 
       <label>Nombre del dueño
@@ -45,12 +54,12 @@
         <select name="vivienda_tipo" required>
           <option value="" selected disabled>Selecciona</option>
           <option value="casa">Casa</option>
-          <option value="apto">Apartamento</option>
+          <option value="apartamento">Apartamento</option>
         </select>
       </label>
 
       <label>Dirección
-        <input name="direccion" placeholder="Ej: Calle 97 #70-89" required>
+        <input name="direccion" placeholder="Calle / Carrera / Número" required>
       </label>
 
       <div class="row-2">
@@ -58,13 +67,13 @@
           <input name="torre" placeholder="Ej: Torre 3">
         </label>
 
-        <label>Apto (si aplica)
+        <label>Apartamento (si aplica)
           <input name="apto" placeholder="Ej: 1204">
         </label>
       </div>
 
-      <label>Detalle / Instrucciones (portería, interior, código, etc.)
-        <input name="direccion_detalle" placeholder="Ej: Portería, código 1234, llamar al llegar">
+      <label>Instrucciones adicionales
+        <input name="direccion_detalle" placeholder="Portería, código, referencias…">
       </label>
 
       <div class="row-2">
@@ -76,23 +85,24 @@
           </select>
         </label>
 
-        <label>Rango (oficina)
+        <label>Rango horario
           <select name="horario_rango" required>
             <option value="" selected disabled>Selecciona</option>
-            <option value="9:00 - 12:00">9:00 - 12:00</option>
-            <option value="13:00 - 17:00">13:00 - 17:00</option>
+            <option value="9:00 - 12:00">9:00 – 12:00</option>
+            <option value="13:00 - 17:00">13:00 – 17:00</option>
           </select>
         </label>
       </div>
 
-      <label>Fecha (opcional)
+      <label>Fecha de recogida (opcional)
         <input type="date" name="fecha">
       </label>
 
+      <!-- ================== DATOS DE LA MASCOTA ================== -->
       <div class="section-title">Datos de la mascota</div>
 
       <label>Nombre de la mascota
-        <input name="mascota_nombre" placeholder="Ej: Lili" required>
+        <input name="mascota_nombre" required>
       </label>
 
       <label>Especie
@@ -105,17 +115,18 @@
       </label>
 
       <label id="mascota_otro_wrap" class="hidden">¿Cuál?
-        <input name="mascota_otro" id="mascota_otro" placeholder="Ej: Conejo, Ave, etc">
+        <input name="mascota_otro" id="mascota_otro" placeholder="Especifica la mascota">
       </label>
 
       <label>Raza
-        <input name="mascota_raza" placeholder="Ej: Criollo, Bulldog, Siamés...">
+        <input name="mascota_raza" placeholder="Ej: Criollo, Bulldog…">
       </label>
 
       <label>Edad
-        <input name="mascota_edad" placeholder="Ej: 2 años / 8 meses">
+        <input name="mascota_edad" placeholder="Ej: 2 años / 6 meses">
       </label>
 
+      <!-- ================== MUESTRA ================== -->
       <div class="section-title">Muestra</div>
 
       <label>Tipo de muestra
@@ -132,11 +143,13 @@
         <input name="muestra_otro" id="muestra_otro" placeholder="Describe la muestra">
       </label>
 
-      <label>Condición especial (si aplica)
-        <input name="muestra_condicion" placeholder="Ej: refrigerada, entregar antes de 2h, mantener en hielo...">
+      <label>Condición especial
+        <input name="muestra_condicion" placeholder="Refrigerada, hielo, tiempo máximo…">
       </label>
 
-      <button class="btn-primary" type="submit">Enviar solicitud</button>
+      <button class="btn-primary" type="submit">
+        Enviar solicitud
+      </button>
     </form>
   </section>
 </main>
@@ -147,8 +160,7 @@
   const mascotaOtro = document.getElementById("mascota_otro");
 
   function toggleMascotaOtro(){
-    const v = especie.value;
-    if (v === "otro") {
+    if (especie.value === "otro") {
       mascotaOtroWrap.classList.remove("hidden");
       mascotaOtro.required = true;
     } else {
@@ -165,8 +177,7 @@
   const muestraOtro = document.getElementById("muestra_otro");
 
   function toggleMuestraOtro(){
-    const v = muestra.value;
-    if (v === "otro") {
+    if (muestra.value === "otro") {
       muestraOtroWrap.classList.remove("hidden");
       muestraOtro.required = true;
     } else {
