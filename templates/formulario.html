@@ -31,9 +31,6 @@
   <section class="card">
     <form class="grid grid-vertical" method="POST" action="{{ url_for('crear_solicitud') }}">
 
-      <!-- ===================== -->
-      <!-- 1) DATOS DEL DUEÑO -->
-      <!-- ===================== -->
       <div class="section-title">Datos del dueño</div>
 
       <label>Nombre del dueño
@@ -45,7 +42,7 @@
       </label>
 
       <label>Tipo de vivienda
-        <select name="vivienda_tipo" id="vivienda_tipo" required>
+        <select name="vivienda_tipo" required>
           <option value="" selected disabled>Selecciona</option>
           <option value="casa">Casa</option>
           <option value="apto">Apartamento</option>
@@ -58,16 +55,16 @@
 
       <div class="row-2">
         <label>Torre (si aplica)
-          <input name="torre" id="torre" placeholder="Ej: Torre 3">
+          <input name="torre" placeholder="Ej: Torre 3">
         </label>
 
         <label>Apto (si aplica)
-          <input name="apto" id="apto" placeholder="Ej: 1204">
+          <input name="apto" placeholder="Ej: 1204">
         </label>
       </div>
 
-      <label>Detalle / Instrucciones (portería, interior, etc.)
-        <input name="direccion_detalle" placeholder="Ej: Interior 2, dejar en recepción, llamar al llegar">
+      <label>Detalle / Instrucciones (portería, interior, código, etc.)
+        <input name="direccion_detalle" placeholder="Ej: Portería, código 1234, llamar al llegar">
       </label>
 
       <div class="row-2">
@@ -92,9 +89,6 @@
         <input type="date" name="fecha">
       </label>
 
-      <!-- ===================== -->
-      <!-- 2) DATOS DE LA MASCOTA -->
-      <!-- ===================== -->
       <div class="section-title">Datos de la mascota</div>
 
       <label>Nombre de la mascota
@@ -104,9 +98,9 @@
       <label>Especie
         <select name="mascota_especie" id="mascota_especie" required>
           <option value="" selected disabled>Selecciona</option>
-          <option value="perro">Perro</option>
-          <option value="gato">Gato</option>
-          <option value="otro">Otro</option>
+          <option value="perro">🐶 Perro</option>
+          <option value="gato">🐱 Gato</option>
+          <option value="otro">🐾 Otro</option>
         </select>
       </label>
 
@@ -122,9 +116,6 @@
         <input name="mascota_edad" placeholder="Ej: 2 años / 8 meses">
       </label>
 
-      <!-- ===================== -->
-      <!-- 3) MUESTRA -->
-      <!-- ===================== -->
       <div class="section-title">Muestra</div>
 
       <label>Tipo de muestra
@@ -142,7 +133,7 @@
       </label>
 
       <label>Condición especial (si aplica)
-        <input name="muestra_condicion" placeholder="Ej: refrigerada, entregar antes de 2h, mantener en hielo, etc">
+        <input name="muestra_condicion" placeholder="Ej: refrigerada, entregar antes de 2h, mantener en hielo...">
       </label>
 
       <button class="btn-primary" type="submit">Enviar solicitud</button>
@@ -151,7 +142,6 @@
 </main>
 
 <script>
-  // Mostrar/ocultar "otro" (mascota)
   const especie = document.getElementById("mascota_especie");
   const mascotaOtroWrap = document.getElementById("mascota_otro_wrap");
   const mascotaOtro = document.getElementById("mascota_otro");
@@ -170,7 +160,6 @@
   especie.addEventListener("change", toggleMascotaOtro);
   toggleMascotaOtro();
 
-  // Mostrar/ocultar "otro" (muestra)
   const muestra = document.getElementById("muestra_tipo");
   const muestraOtroWrap = document.getElementById("muestra_otro_wrap");
   const muestraOtro = document.getElementById("muestra_otro");

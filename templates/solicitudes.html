@@ -29,82 +29,145 @@
 <main class="container">
   <h1>Solicitudes (últimas 50)</h1>
 
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Dueño</th>
-          <th>Tel</th>
-          <th>Dirección</th>
-          <th>Vivienda</th>
-          <th>Horario</th>
-          <th>Fecha</th>
-
-          <th>Mascota</th>
-          <th>Especie</th>
-          <th>Raza</th>
-          <th>Edad</th>
-
-          <th>Muestra</th>
-          <th>¿Cuál?</th>
-          <th>Condición</th>
-
-          <th>Estado</th>
-          <th>Creado</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in solicitudes %}
-        <tr>
-          <td>{{ s.id }}</td>
-
-          <td>{{ s.dueno_nombre }}</td>
-          <td>{{ s.dueno_telefono }}</td>
-
-          <td>
-            {{ s.direccion }}
-            {% if s.torre or s.apto %}
-              <br><small class="muted">Torre: {{ s.torre or '-' }} | Apto: {{ s.apto or '-' }}</small>
-            {% endif %}
-            {% if s.direccion_detalle %}
-              <br><small class="muted">{{ s.direccion_detalle }}</small>
-            {% endif %}
-          </td>
-
-          <td>{{ s.vivienda_tipo }}</td>
-
-          <td>{{ s.horario_turno }} ({{ s.horario_rango }})</td>
-          <td>{{ s.fecha }}</td>
-
-          <td>{{ s.mascota_nombre }}</td>
-          <td>
-            {{ s.mascota_especie }}
-            {% if s.mascota_especie == 'otro' and s.mascota_otro %}
-              <br><small class="muted">{{ s.mascota_otro }}</small>
-            {% endif %}
-          </td>
-          <td>{{ s.mascota_raza }}</td>
-          <td>{{ s.mascota_edad }}</td>
-
-          <td>{{ s.muestra_tipo }}</td>
-          <td>
-            {% if s.muestra_tipo == 'otro' %}
-              {{ s.muestra_otro }}
-            {% else %}
-              -
-            {% endif %}
-          </td>
-          <td>{{ s.muestra_condicion }}</td>
-
-          <td><span class="badge">{{ s.estado }}</span></td>
-          <td>{{ s.creado }}</td>
-        </tr>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-wrap">
+        {% for cat, msg in messages %}
+          <div class="flash {{ cat }}">{{ msg }}</div>
         {% endfor %}
-      </tbody>
-    </table>
-  </div>
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST" action="{{ url_for('borrar_solicitudes') }}" id="deleteForm">
+    <div class="toolbar">
+      <label class="chk">
+        <input type="checkbox" id="checkAll">
+        <span>Seleccionar todo</span>
+      </label>
+
+      <button type="submit" class="btn-danger" id="deleteBtn" disabled>
+        Borrar seleccionadas
+      </button>
+
+      <span class="muted" id="selectedCount">0 seleccionadas</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>ID</th>
+            <th>Dueño</th>
+            <th>Tel</th>
+            <th>Dirección</th>
+            <th>Vivienda</th>
+            <th>Horario</th>
+            <th>Fecha</th>
+
+            <th>Mascota</th>
+            <th>Especie</th>
+            <th>Raza</th>
+            <th>Edad</th>
+
+            <th>Muestra</th>
+            <th>¿Cuál?</th>
+            <th>Condición</th>
+
+            <th>Estado</th>
+            <th>Creado</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in solicitudes %}
+          <tr>
+            <td>
+              <input class="rowCheck" type="checkbox" name="ids" value="{{ s.id }}">
+            </td>
+
+            <td>{{ s.id }}</td>
+            <td>{{ s.dueno_nombre }}</td>
+            <td>{{ s.dueno_telefono }}</td>
+
+            <td>
+              {{ s.direccion }}
+              {% if s.torre or s.apto %}
+                <br><small class="muted">Torre: {{ s.torre or '-' }} | Apto: {{ s.apto or '-' }}</small>
+              {% endif %}
+              {% if s.direccion_detalle %}
+                <br><small class="muted">{{ s.direccion_detalle }}</small>
+              {% endif %}
+            </td>
+
+            <td>{{ s.vivienda_tipo }}</td>
+            <td>{{ s.horario_turno }} ({{ s.horario_rango }})</td>
+            <td>{{ s.fecha }}</td>
+
+            <td>{{ s.mascota_nombre }}</td>
+            <td>
+              {{ s.mascota_especie }}
+              {% if s.mascota_especie == 'otro' and s.mascota_otro %}
+                <br><small class="muted">{{ s.mascota_otro }}</small>
+              {% endif %}
+            </td>
+            <td>{{ s.mascota_raza }}</td>
+            <td>{{ s.mascota_edad }}</td>
+
+            <td>{{ s.muestra_tipo }}</td>
+            <td>
+              {% if s.muestra_tipo == 'otro' %}
+                {{ s.muestra_otro }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>{{ s.muestra_condicion }}</td>
+
+            <td><span class="badge">{{ s.estado }}</span></td>
+            <td>{{ s.creado }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
 </main>
+
+<script>
+  const checkAll = document.getElementById('checkAll');
+  const rowChecks = Array.from(document.querySelectorAll('.rowCheck'));
+  const deleteBtn = document.getElementById('deleteBtn');
+  const selectedCount = document.getElementById('selectedCount');
+  const deleteForm = document.getElementById('deleteForm');
+
+  function updateUI(){
+    const selected = rowChecks.filter(c => c.checked).length;
+    selectedCount.textContent = `${selected} seleccionadas`;
+    deleteBtn.disabled = selected === 0;
+    checkAll.checked = selected > 0 && selected === rowChecks.length;
+    checkAll.indeterminate = selected > 0 && selected < rowChecks.length;
+  }
+
+  checkAll.addEventListener('change', () => {
+    rowChecks.forEach(c => c.checked = checkAll.checked);
+    updateUI();
+  });
+
+  rowChecks.forEach(c => c.addEventListener('change', updateUI));
+
+  deleteForm.addEventListener('submit', (e) => {
+    const selected = rowChecks.filter(c => c.checked).length;
+    if (selected === 0) {
+      e.preventDefault();
+      return;
+    }
+    const ok = confirm(`¿Seguro que deseas borrar ${selected} solicitud(es)? Esta acción no se puede deshacer.`);
+    if (!ok) e.preventDefault();
+  });
+
+  updateUI();
+</script>
 
 </body>
 </html>
