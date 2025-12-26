@@ -1,154 +1,107 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Solicitudes</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+{% set title = "Solicitudes" %}
 
-<header class="navbar">
-  <div class="navbar-inner">
-    <div class="brand">
-      <img src="{{ url_for('static', filename='img/logo-a3.png') }}" alt="Logo A3">
-      <div class="brand-title">
-        <strong>A3 Laboratorio Veterinario</strong>
-        <span>Solicitud de recogida de muestras</span>
-      </div>
-    </div>
-
-    <nav class="nav">
-      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
-      <a class="nav-btn" href="{{ url_for('logout') }}">Logout</a>
-    </nav>
-  </div>
-</header>
-
-<main class="container">
+{% block content %}
   <h1>Solicitudes (últimas 50)</h1>
 
-  <!-- Toolbar -->
-  <div class="table-toolbar">
-    <label class="check-all">
-      <input type="checkbox" id="checkAll">
-      <span>Seleccionar todo</span>
-    </label>
+  <section class="card">
+    <form method="POST" action="{{ url_for('borrar_solicitudes') }}">
+      <div class="table-actions">
+        <label class="checkline">
+          <input id="checkAll" type="checkbox">
+          <span>Seleccionar todo</span>
+        </label>
 
-    <button class="btn-danger" id="btnDelete" type="button" disabled>
-      Borrar seleccionadas
-    </button>
+        <button class="btn-danger" type="submit" id="btnDelete" disabled>
+          Borrar seleccionadas
+        </button>
 
-    <div class="selected-count">
-      <span id="countSelected">0</span> seleccionadas
-    </div>
-  </div>
+        <div class="muted" id="countSel">0 seleccionadas</div>
+      </div>
 
-  <!-- Tabla -->
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th class="col-check"></th>
-          <th>ID</th>
-          <th>Dueño</th>
-          <th>Tel</th>
-          <th>Vivienda</th>
-          <th>Dirección</th>
-          <th>Horario</th>
-          <th>Fecha</th>
-          <th>Mascota</th>
-          <th>Especie</th>
-          <th>Raza</th>
-          <th>Edad</th>
-          <th>Muestra</th>
-          <th>¿Cuál?</th>
-          <th>Condición</th>
-          <th>Estado</th>
-          <th>Creado</th>
-        </tr>
-      </thead>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>ID</th>
+              <th>Dueño</th>
+              <th>Tel</th>
+              <th>Vivienda</th>
+              <th>Dirección</th>
+              <th>Torre</th>
+              <th>Apto</th>
+              <th>Instrucciones</th>
+              <th>Turno</th>
+              <th>Franja</th>
+              <th>Fecha</th>
+              <th>Mascota</th>
+              <th>Especie</th>
+              <th>Raza</th>
+              <th>Edad</th>
+              <th>Muestra</th>
+              <th>¿Cuál?</th>
+              <th>Condición</th>
+              <th>Estado</th>
+              <th>Creado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in solicitudes %}
+            <tr>
+              <td>
+                <input class="rowcheck" type="checkbox" name="ids" value="{{ s.id }}">
+              </td>
+              <td>{{ s.id }}</td>
+              <td>{{ s.dueno }}</td>
+              <td>{{ s.tel }}</td>
+              <td>{{ s.vivienda or "" }}</td>
+              <td>{{ s.direccion or "" }}</td>
+              <td>{{ s.torre or "" }}</td>
+              <td>{{ s.apto or "" }}</td>
+              <td>{{ s.instrucciones or "" }}</td>
+              <td>{{ s.turno or "" }}</td>
+              <td>{{ s.franja or "" }}</td>
+              <td>{{ s.fecha or "" }}</td>
+              <td>{{ s.mascota or "" }}</td>
+              <td>{{ s.especie or "" }}</td>
+              <td>{{ s.raza or "" }}</td>
+              <td>{{ s.edad or "" }}</td>
+              <td>{{ s.muestra or "" }}</td>
+              <td>{{ s.muestra_cual or "" }}</td>
+              <td>{{ s.condicion or "" }}</td>
+              <td><span class="badge">{{ s.estado or "pendiente" }}</span></td>
+              <td>{{ s.creado or "" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </form>
+  </section>
 
-      <tbody>
-        {% for s in solicitudes %}
-        <tr>
-          <td class="col-check">
-            <input class="row-check" type="checkbox" value="{{ s.id }}">
-          </td>
+  <script>
+    const checkAll = document.getElementById("checkAll");
+    const checks = () => Array.from(document.querySelectorAll(".rowcheck"));
+    const btn = document.getElementById("btnDelete");
+    const count = document.getElementById("countSel");
 
-          <td class="mono">{{ s.id }}</td>
-          <td>{{ s.dueno or '' }}</td>
-          <td class="mono">{{ s.tel or '' }}</td>
-          <td>{{ s.vivienda or '' }}</td>
-          <td class="cell-wrap">{{ s.direccion or '' }}</td>
-          <td>{{ s.horario or '' }}</td>
-          <td class="mono">{{ s.fecha or '' }}</td>
-          <td>{{ s.mascota or '' }}</td>
-          <td>{{ s.especie or '' }}</td>
-          <td>{{ s.raza or '' }}</td>
-          <td class="mono">{{ s.edad or '' }}</td>
-          <td>{{ s.muestra or '' }}</td>
-          <td class="cell-wrap">{{ s.muestra_cual or '' }}</td>
-          <td class="cell-wrap">{{ s.condicion or '' }}</td>
-
-          <td>
-            <span class="badge">{{ s.estado or '' }}</span>
-          </td>
-
-          <td class="mono">{{ s.creado or '' }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Form oculto para borrar -->
-  <form id="deleteForm" method="POST" action="{{ url_for('borrar_solicitudes') }}" style="display:none;">
-    <input type="hidden" name="ids" id="idsToDelete" value="">
-  </form>
-</main>
-
-<script>
-  const checkAll = document.getElementById("checkAll");
-  const rowChecks = () => Array.from(document.querySelectorAll(".row-check"));
-  const btnDelete = document.getElementById("btnDelete");
-  const countSelected = document.getElementById("countSelected");
-  const deleteForm = document.getElementById("deleteForm");
-  const idsToDelete = document.getElementById("idsToDelete");
-
-  function updateUI(){
-    const selected = rowChecks().filter(c => c.checked);
-    countSelected.textContent = String(selected.length);
-    btnDelete.disabled = selected.length === 0;
-    checkAll.checked = selected.length > 0 && selected.length === rowChecks().length;
-    checkAll.indeterminate = selected.length > 0 && selected.length < rowChecks().length;
-  }
-
-  checkAll.addEventListener("change", () => {
-    rowChecks().forEach(c => c.checked = checkAll.checked);
-    updateUI();
-  });
-
-  document.addEventListener("change", (e) => {
-    if (e.target.classList && e.target.classList.contains("row-check")) {
-      updateUI();
+    function refresh(){
+      const n = checks().filter(c => c.checked).length;
+      btn.disabled = n === 0;
+      count.textContent = `${n} seleccionadas`;
+      checkAll.checked = n > 0 && n === checks().length;
+      checkAll.indeterminate = n > 0 && n < checks().length;
     }
-  });
 
-  btnDelete.addEventListener("click", () => {
-    const selectedIds = rowChecks().filter(c => c.checked).map(c => c.value);
-    if (selectedIds.length === 0) return;
+    checkAll.addEventListener("change", () => {
+      checks().forEach(c => c.checked = checkAll.checked);
+      refresh();
+    });
 
-    const ok = confirm(`¿Borrar ${selectedIds.length} solicitud(es)?`);
-    if (!ok) return;
+    checks().forEach(c => c.addEventListener("change", refresh));
 
-    idsToDelete.value = selectedIds.join(",");
-    deleteForm.submit();
-  });
+    refresh();
+  </script>
+{% endblock %}
 
-  updateUI();
-</script>
-
-</body>
-</html>

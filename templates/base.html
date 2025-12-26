@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>{{ title if title else "A3 Laboratorio Veterinario" }}</title>
+  <title>{{ title or "A3 Laboratorio Veterinario" }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
@@ -20,12 +20,7 @@
 
     <nav class="nav">
       <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}"
-         href="{% if session.get('logged_in') %}{{ url_for('ver_solicitudes') }}{% else %}{{ url_for('login') }}{% endif %}">
-         Ver solicitudes
-      </a>
-
+      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
       {% if session.get('logged_in') %}
         <a class="nav-btn" href="{{ url_for('logout') }}">Logout</a>
       {% endif %}

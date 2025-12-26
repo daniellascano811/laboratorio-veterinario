@@ -1,50 +1,25 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Login</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+{% set title = "Login" %}
 
-<header class="navbar">
-  <div class="navbar-inner">
-    <div class="brand">
-      <img src="{{ url_for('static', filename='img/logo-a3.png') }}" alt="Logo A3">
-      <div class="brand-title">
-        <strong>A3 Laboratorio Veterinario</strong>
-        <span>Acceso interno</span>
-      </div>
-    </div>
-
-    <nav class="nav">
-      <a class="nav-btn" href="{{ url_for('home') }}">Nueva solicitud</a>
-    </nav>
-  </div>
-</header>
-
-<main class="container">
+{% block content %}
   <h1>Login</h1>
 
-  <section class="card card-narrow">
-    <form class="grid grid-login" method="POST" action="{{ url_for('login') }}">
+  <section class="card">
+    {% if error %}
+      <div class="alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="grid grid-2" method="POST" action="{{ url_for('login_post') }}">
       <label>Usuario
         <input name="usuario" required>
       </label>
 
       <label>Contraseña
-        <input name="password" type="password" required>
+        <input type="password" name="password" required>
       </label>
-
-      {% if error %}
-      <div class="alert">{{ error }}</div>
-      {% endif %}
 
       <button class="btn-primary" type="submit">Ingresar</button>
     </form>
   </section>
-</main>
+{% endblock %}
 
-</body>
-</html>

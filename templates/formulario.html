@@ -1,98 +1,123 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Nueva solicitud de muestra</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+{% set title = "Nueva solicitud de muestra" %}
 
-<header class="navbar">
-  <div class="navbar-inner">
-    <div class="brand">
-      <img src="{{ url_for('static', filename='img/logo-a3.png') }}" alt="Logo A3">
-      <div class="brand-title">
-        <strong>A3 Laboratorio Veterinario</strong>
-        <span>Solicitud de recogida de muestras</span>
-      </div>
-    </div>
-
-    <nav class="nav">
-      <a class="nav-btn {{ 'active' if active=='form' else '' }}" href="{{ url_for('home') }}">Nueva solicitud</a>
-      <a class="nav-btn {{ 'active' if active=='solicitudes' else '' }}" href="{{ url_for('ver_solicitudes') }}">Ver solicitudes</a>
-    </nav>
-  </div>
-</header>
-
-<main class="container">
-  <h1>💉 Nueva solicitud de muestra</h1>
+{% block content %}
+  <h1>Nueva solicitud de muestra <span class="emoji">💉</span></h1>
   <p class="subtitle">Completa los datos del dueño y de la mascota para coordinar la recogida.</p>
 
   <section class="card">
-    <form method="POST" action="{{ url_for('crear_solicitud') }}">
+    <form class="grid" method="POST" action="{{ url_for('crear_solicitud') }}">
 
-      <!-- ===== SECCIÓN 1: DUEÑO ===== -->
-      <div class="section-title">
-        <span class="section-icon">🧍</span>
-        <div>
-          <h2>Datos del dueño</h2>
-          <p>Información de contacto y dirección de recogida</p>
-        </div>
+      <!-- ====== BLOQUE DUEÑO ====== -->
+      <div class="section-head">
+        <h2>Datos del dueño</h2>
+        <p>Información de contacto y dirección de recogida</p>
       </div>
 
-      <div class="grid grid-2">
-        <label>Nombre del dueño *
-          <input name="dueno" placeholder="Nombre y apellido" required>
-        </label>
+      <label class="col-2">Nombre del dueño *
+        <input name="dueno" placeholder="Nombre y apellido" required>
+      </label>
 
-        <label>Teléfono *
-          <input name="tel" placeholder="Ej: 3001234567" required>
-        </label>
+      <label>Teléfono *
+        <input name="tel" placeholder="Ej: 3001234567" required>
+      </label>
 
-        <label>Zona
-          <input name="zona" placeholder="Ej: Norte">
-        </label>
+      <label>Zona
+        <input name="zona" placeholder="Ej: Norte">
+      </label>
 
-        <label>Dirección (incluye torre/apto si aplica) *
-          <input name="direccion" placeholder="Ej: Calle 97 #70-89, Torre 2 Apto 504" required>
-        </label>
+      <label>Tipo de vivienda
+        <select name="vivienda">
+          <option value="">Selecciona</option>
+          <option value="Casa">Casa</option>
+          <option value="Apartamento">Apartamento</option>
+        </select>
+      </label>
 
-        <label>Fecha de recogida
-          <input type="date" name="fecha">
-        </label>
+      <label class="col-2">Dirección (calle/carrera + #) *
+        <input name="direccion" placeholder="Ej: Calle 97 #70-89" required>
+      </label>
 
-        <label>Horario (ej: mañana / tarde)
-          <input name="horario" placeholder="Ej: Mañana (9:00 - 12:00)">
-        </label>
+      <label>Torre (si aplica)
+        <input name="torre" placeholder="Ej: Torre 2A">
+      </label>
+
+      <label>Apto / Interior (si aplica)
+        <input name="apto" placeholder="Ej: Apto 301 / Interior 5">
+      </label>
+
+      <label class="col-4">Instrucciones de portería / acceso
+        <input name="instrucciones" placeholder="Ej: Código, nombre en portería, apto, etc.">
+      </label>
+
+      <label>Turno *
+        <select name="turno" required>
+          <option value="">Selecciona</option>
+          <option value="Mañana">Mañana</option>
+          <option value="Tarde">Tarde</option>
+        </select>
+      </label>
+
+      <label>Franja (9–12 / 1–5) *
+        <select name="franja" required>
+          <option value="">Selecciona</option>
+          <option value="09:00 - 12:00">09:00 - 12:00</option>
+          <option value="13:00 - 17:00">13:00 - 17:00</option>
+        </select>
+      </label>
+
+      <label>Fecha de recogida
+        <input type="date" name="fecha">
+      </label>
+
+      <div class="divider col-4"></div>
+
+      <!-- ====== BLOQUE MASCOTA ====== -->
+      <div class="section-head col-4">
+        <h2>Datos de la mascota</h2>
+        <p>Qué mascota es y qué muestra se va a recoger</p>
       </div>
 
-      <hr class="divider">
+      <label class="col-2">Nombre de la mascota
+        <input name="mascota" placeholder="Ej: Lili">
+      </label>
 
-      <!-- ===== SECCIÓN 2: MASCOTA ===== -->
-      <div class="section-title">
-        <span class="section-icon">🐾</span>
-        <div>
-          <h2>Datos de la mascota</h2>
-          <p>Qué mascota es y qué muestra se va a recoger</p>
-        </div>
-      </div>
+      <label>Especie
+        <select name="especie">
+          <option value="">Selecciona</option>
+          <option value="Perro">🐶 Perro</option>
+          <option value="Gato">🐱 Gato</option>
+          <option value="Otro">🐾 Otro</option>
+        </select>
+      </label>
 
-      <div class="grid grid-2">
-        <label>Nombre de la mascota
-          <input name="mascota" placeholder="Ej: Lili">
-        </label>
+      <label>Raza
+        <input name="raza" placeholder="Ej: Criollo / Labrador / Siamés...">
+      </label>
 
-        <label>Muestra (orina / heces / sangre / otro) *
-          <input name="muestra" placeholder="Ej: Orina" required>
-        </label>
-      </div>
+      <label>Edad
+        <input name="edad" placeholder="Ej: 3 años / 6 meses">
+      </label>
 
-      <button class="btn-primary" type="submit">Enviar solicitud</button>
+      <label>Muestra *
+        <select name="muestra" required>
+          <option value="">Selecciona</option>
+          <option value="Sangre">Sangre</option>
+          <option value="Orina">Orina</option>
+          <option value="Heces">Heces</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </label>
 
+      <label class="col-2">¿Cuál? (si es “Otro”)
+        <input name="muestra_cual" placeholder="Describe la muestra">
+      </label>
+
+      <label class="col-4">Condición especial (refrigerada / hielo / tiempo máximo)
+        <input name="condicion" placeholder="Ej: Refrigerada, entregar en 2 horas, en hielo...">
+      </label>
+
+      <button class="btn-primary col-4" type="submit">Enviar solicitud</button>
     </form>
   </section>
-</main>
-
-</body>
-</html>
+{% endblock %}
