@@ -1,40 +1,12 @@
-{% extends "base.html" %}
-{% block title %}Solicitudes{% endblock %}
-
-{% block content %}
-<div class="card">
+<!doctype html>
+<html>
+<body>
   <h2>Solicitudes</h2>
-
-  {% if not solicitudes %}
-    <p>No hay solicitudes aún.</p>
-  {% else %}
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Fecha</th>
-          <th>Nombre</th>
-          <th>Contacto</th>
-          <th>Muestra</th>
-          <th>Observaciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for s in solicitudes %}
-          <tr>
-            <td>{{ s.id }}</td>
-            <td>{{ s.created_at }}</td>
-            <td>{{ s.nombre }}</td>
-            <td>
-              {{ s.telefono }}<br>
-              {{ s.email }}
-            </td>
-            <td>{{ s.tipo_muestra }}</td>
-            <td>{{ s.observaciones }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% endif %}
-</div>
-{% endblock %}
+  <ul>
+    {% for s in solicitudes %}
+      <li>{{ s.nombre }} - {{ s.created_at }}</li>
+    {% endfor %}
+  </ul>
+  <a href="/logout">Salir</a>
+</body>
+</html>
