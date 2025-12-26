@@ -4,23 +4,14 @@
 {% block content %}
 <div class="card">
   <h2>Iniciar sesión</h2>
-  <p>Usuario por defecto: <b>admin</b> / Contraseña: <b>admin123</b></p>
 
-  <!-- ✅ OJO: action apunta a iniciar_sesion (NO login_post) -->
-  <form method="POST" action="{{ url_for('iniciar_sesion') }}" class="row">
-    <div style="flex:1; min-width:260px;">
+  <!-- FORMULARIO: SIEMPRE POST a iniciar_sesion -->
+  <form method="POST" action="{{ url_for('iniciar_sesion') }}">
+    
+    <div style="margin-bottom:12px;">
       <label>Usuario</label>
-      <input name="username" placeholder="admin" required>
+      <input type="text" name="username" required>
     </div>
 
-    <div style="flex:1; min-width:260px;">
-      <label>Contraseña</label>
-      <input name="password" type="password" placeholder="admin123" required>
-    </div>
-
-    <div style="width:100%; margin-top:8px;">
-      <button type="submit">Ingresar</button>
-    </div>
-  </form>
-</div>
-{% endblock %}
+    <div style="margin-bottom:12px;">
+      <label>Contraseña</l
