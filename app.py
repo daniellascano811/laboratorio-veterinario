@@ -8,9 +8,9 @@ from flask import (
     redirect, url_for, session, abort
 )
 
-# Psycopg (Postgres)
-# Requiere: psycopg[binary] en requirements.txt
 import psycopg
+from psycopg.rows import dict_row  # ✅ clave para que PG devuelva dicts
+
 
 # =========================
 # CONFIG
@@ -21,9 +21,6 @@ app.secret_key = os.environ.get("SECRET_KEY", "dev-secret-key")
 DATABASE_URL = os.environ.get("DATABASE_URL")  # Render Postgres URL
 ADMIN_USER = os.environ.get("ADMIN_USER", "admin")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "1234")
-
-# Si quieres forzar admin setup (opcional)
-FORCE_ADMIN_SYNC = os.environ.get("FORCE_ADMIN_SYNC", "0")  # "1" para forzar
 
 
 # =========================
@@ -46,7 +43,6 @@ def using_postgres() -> bool:
 
 
 def get_sqlite_conn():
-    # DB local (archivo)
     db_path = os.path.join(os.path.dirname(__file__), "app_local.db")
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
@@ -54,10 +50,8 @@ def get_sqlite_conn():
 
 
 def get_pg_conn():
-    # En Render normalmente funciona directo con DATABASE_URL
-    # Si tu URL incluye ?sslmode=require, psycopg lo puede parsear,
-    # pero si te sale error de "invalid sslmode value", tu URL está mal pegada.
-    return psycopg.connect(DATABASE_URL, autocommit=False)
+    # ✅ row_factory=dict_row hace que fetchall() retorne dicts (no tuplas)
+    return psycopg.connect(DATABASE_URL, row_factory=dict_row)
 
 
 def get_db():
@@ -70,39 +64,18 @@ def get_db():
 
 
 def sql_placeholder(engine: str) -> str:
-    """
-    psycopg usa %s
-    sqlite usa ?
-    """
     return "%s" if engine == "pg" else "?"
 
 
-def fetchall_list(rows, engine: str):
-    """
-    Convierte rows a lista de dict
-    """
-    out = []
-    for r in rows:
-        if engine == "pg":
-            out.append(dict(r))
-        else:
-            out.append(dict(r))
-    return out
-
-
 def init_db():
-    """
-    Crea tablas si no existen y agrega columnas nuevas si faltan.
-    Compatible con PG y SQLite.
-    """
     conn, engine = get_db()
     cur = conn.cursor()
     try:
         if engine == "pg":
-            # Tabla principal
             cur.execute("""
             CREATE TABLE IF NOT EXISTS solicitudes (
               id SERIAL PRIMARY KEY,
+
               -- Dueño
               dueno_nombre TEXT,
               tel TEXT,
@@ -133,8 +106,6 @@ def init_db():
             """)
             conn.commit()
 
-            # En PG es más fácil asegurar columnas con ALTER IF NOT EXISTS (según versión)
-            # Pero para evitar líos, intentamos y si falla ignoramos.
             cols = [
                 ("dueno_nombre", "TEXT"),
                 ("tel", "TEXT"),
@@ -157,6 +128,7 @@ def init_db():
                 ("estado", "TEXT"),
                 ("creado", "TIMESTAMP"),
             ]
+
             for col, typ in cols:
                 try:
                     cur.execute(f"ALTER TABLE solicitudes ADD COLUMN IF NOT EXISTS {col} {typ};")
@@ -165,7 +137,6 @@ def init_db():
                     conn.rollback()
 
         else:
-            # SQLite
             cur.execute("""
             CREATE TABLE IF NOT EXISTS solicitudes (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -197,9 +168,8 @@ def init_db():
             """)
             conn.commit()
 
-            # Asegurar columnas nuevas (SQLite no tiene IF NOT EXISTS en ALTER COLUMN)
             cur.execute("PRAGMA table_info(solicitudes)")
-            existing = {row[1] for row in cur.fetchall()}  # name is index 1
+            existing = {row[1] for row in cur.fetchall()}
 
             def add_col(name, typ):
                 if name not in existing:
@@ -235,7 +205,7 @@ def init_db():
         conn.close()
 
 
-# Inicializa DB al arrancar (sin tumbar app si falla)
+# Init DB sin tumbar app
 try:
     init_db()
 except Exception as e:
@@ -247,7 +217,6 @@ except Exception as e:
 # =========================
 @app.get("/")
 def home():
-    # Página pública: formulario (sin login)
     return render_template("formulario.html", active="form")
 
 
@@ -277,31 +246,27 @@ def logout():
 
 @app.post("/solicitud")
 def crear_solicitud():
-    # Dueño
     dueno_nombre = (request.form.get("dueno_nombre") or "").strip()
     tel = (request.form.get("tel") or "").strip()
-    tipo_vivienda = (request.form.get("tipo_vivienda") or "").strip()  # casa/apartamento
+    tipo_vivienda = (request.form.get("tipo_vivienda") or "").strip()
     direccion = (request.form.get("direccion") or "").strip()
     torre = (request.form.get("torre") or "").strip()
     apto = (request.form.get("apto") or "").strip()
     porteria = (request.form.get("porteria") or "").strip()
-    turno = (request.form.get("turno") or "").strip()  # mañana / tarde
-    franja = (request.form.get("franja") or "").strip()  # 9-12 / 1-5
+    turno = (request.form.get("turno") or "").strip()
+    franja = (request.form.get("franja") or "").strip()
     fecha_str = (request.form.get("fecha") or "").strip()
 
-    # Mascota
     mascota_nombre = (request.form.get("mascota_nombre") or "").strip()
-    especie = (request.form.get("especie") or "").strip()  # perro / gato / otro
+    especie = (request.form.get("especie") or "").strip()
     especie_otro = (request.form.get("especie_otro") or "").strip()
     raza = (request.form.get("raza") or "").strip()
     edad = (request.form.get("edad") or "").strip()
 
-    # Muestra
-    muestra_tipo = (request.form.get("muestra_tipo") or "").strip()  # sangre/orina/heces/otro
+    muestra_tipo = (request.form.get("muestra_tipo") or "").strip()
     muestra_otro = (request.form.get("muestra_otro") or "").strip()
     condicion_especial = (request.form.get("condicion_especial") or "").strip()
 
-    # Validaciones mínimas
     if not dueno_nombre or not tel or not tipo_vivienda or not direccion or not turno or not franja:
         return render_template(
             "formulario.html",
@@ -309,15 +274,7 @@ def crear_solicitud():
             error="Completa los campos obligatorios del dueño (Nombre, Tel, Vivienda, Dirección, Turno y Franja)."
         )
 
-    # Fecha: guardamos como DATE en PG o texto en sqlite
-    fecha_val = None
-    if fecha_str:
-        try:
-            # Si viene YYYY-MM-DD
-            fecha_val = fecha_str
-        except Exception:
-            fecha_val = None
-
+    fecha_val = fecha_str if fecha_str else None
     creado = datetime.utcnow().isoformat()
 
     conn, engine = get_db()
@@ -360,6 +317,7 @@ def crear_solicitud():
                     muestra_tipo, muestra_otro, condicion_especial, "pendiente", creado
                 )
             )
+
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -381,23 +339,20 @@ def ver_solicitudes():
     conn, engine = get_db()
     cur = conn.cursor()
     try:
+        cur.execute("""
+            SELECT *
+            FROM solicitudes
+            ORDER BY id DESC
+            LIMIT 50
+        """)
+        rows = cur.fetchall()
+
         if engine == "pg":
-            cur.execute("""
-                SELECT *
-                FROM solicitudes
-                ORDER BY id DESC
-                LIMIT 50
-            """)
-            rows = cur.fetchall()
-            solicitudes = fetchall_list(rows, engine)
+            # ✅ ya vienen como dict gracias a dict_row
+            solicitudes = rows
         else:
-            cur.execute("""
-                SELECT *
-                FROM solicitudes
-                ORDER BY id DESC
-                LIMIT 50
-            """)
-            solicitudes = [dict(r) for r in cur.fetchall()]
+            solicitudes = [dict(r) for r in rows]
+
     except Exception as e:
         print("ver_solicitudes() error:", e)
         return abort(500)
@@ -423,12 +378,12 @@ def borrar_solicitudes():
     cur = conn.cursor()
     try:
         if engine == "pg":
-            ph = "%s"
-            placeholders = ",".join([ph] * len(ids))
+            placeholders = ",".join(["%s"] * len(ids))
             cur.execute(f"DELETE FROM solicitudes WHERE id IN ({placeholders})", tuple(ids))
         else:
             placeholders = ",".join(["?"] * len(ids))
             cur.execute(f"DELETE FROM solicitudes WHERE id IN ({placeholders})", ids)
+
         conn.commit()
     except Exception as e:
         conn.rollback()
